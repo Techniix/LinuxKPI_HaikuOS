@@ -24,22 +24,19 @@
 #define EOK	0
 #endif
 
-/* FreeBSD kernel-internal pseudo errors (sys/errno.h, _KERNEL). */
-#ifndef ERESTART
+/* FreeBSD kernel-internal pseudo errors (sys/errno.h, _KERNEL), with
+ * FreeBSD's values (freebsd_network defines ERESTART/EJUSTRETURN with its
+ * own; LinuxKPI compares against these, e.g. linux_compat.c). */
+#undef ERESTART
 #define ERESTART	(-1)
-#endif
-#ifndef EJUSTRETURN
+#undef EJUSTRETURN
 #define EJUSTRETURN	(-2)
-#endif
-#ifndef ENOIOCTL
+#undef ENOIOCTL
 #define ENOIOCTL	(-3)
-#endif
-#ifndef EDIRIOCTL
+#undef EDIRIOCTL
 #define EDIRIOCTL	(-4)
-#endif
-#ifndef ERELOOKUP
+#undef ERELOOKUP
 #define ERELOOKUP	(-5)
-#endif
 
 #ifdef __cplusplus
 extern "C" {

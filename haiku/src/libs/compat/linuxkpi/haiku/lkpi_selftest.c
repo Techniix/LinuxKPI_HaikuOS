@@ -11,6 +11,8 @@
  *   3. a tasklet runs and completes a completion
  *   4. queue_work() on system_wq runs and completes a completion
  *   5. msleep()/jiffies advance at 1 per ms
+ *   6. page_pool hands out pages (mt76 fills its RX rings from it), below
+ *      4 GiB for GFP_DMA32
  *
  * Results go to syslog as "linuxkpi: selftest ...". Runs once per driver
  * load, after all other LinuxKPI SYSINITs; takes about 100 ms.
@@ -28,6 +30,8 @@
 #include <linux/workqueue.h>
 #include <linux/jiffies.h>
 #include <linux/delay.h>
+#include <linux/mm.h>
+#include <net/page_pool/helpers.h>
 
 static DECLARE_WAIT_QUEUE_HEAD(st_wq);
 static volatile int st_flag;
@@ -106,5 +110,30 @@ lkpi_selftest(void *arg __unused)
 	j1 = jiffies;
 	printf("linuxkpi: selftest 5 jiffies: %s (%lu ms for msleep(50))\n",
 	    j1 - j0 >= 45 && j1 - j0 < 200 ? "OK" : "FAIL", j1 - j0);
+
+	/* 6 */
+	{
+		struct page_pool_params pp_params = { 0 };
+		struct page_pool *pp;
+		struct page *pg;
+		uint32_t off = 0;
+
+		pp_params.order = 0;
+		pp_params.pool_size = 4;
+		pp = page_pool_create(&pp_params);
+		if (IS_ERR_OR_NULL(pp)) {
+			printf("linuxkpi: selftest 6 page_pool: FAIL (create)\n");
+		} else {
+			pg = page_pool_alloc_frag(pp, &off, 2048,
+			    GFP_KERNEL | GFP_DMA32);
+			printf("linuxkpi: selftest 6 page_pool: %s (phys %#llx)\n",
+			    pg != NULL && page_to_phys(pg) < (1ULL << 32) ?
+			    "OK" : "FAIL",
+			    pg != NULL ? (unsigned long long)page_to_phys(pg) : 0ULL);
+			if (pg != NULL)
+				page_pool_put_full_page(pp, pg, false);
+			page_pool_destroy(pp);
+		}
+	}
 }
 SYSINIT(lkpi_selftest, SI_SUB_LAST, SI_ORDER_ANY, lkpi_selftest, NULL);

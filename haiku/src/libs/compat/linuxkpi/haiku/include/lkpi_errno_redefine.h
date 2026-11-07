@@ -201,3 +201,12 @@
 #define EINTEGRITY	97
 #undef ELAST
 #define ELAST	97
+
+/* FreeBSD aliases (sys/errno.h). Haiku defines these with its own values,
+ * so they must be redefined too: a timed-out sleepq wait returns FreeBSD
+ * EWOULDBLOCK (== EAGAIN), and LinuxKPI turns any other value into
+ * -ERESTARTSYS (linux_add_to_sleepqueue()). */
+#undef EWOULDBLOCK
+#define EWOULDBLOCK	EAGAIN
+#undef ENOTSUP
+#define ENOTSUP	EOPNOTSUPP

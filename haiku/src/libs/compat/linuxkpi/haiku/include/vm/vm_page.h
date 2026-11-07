@@ -29,7 +29,22 @@ struct vm_page {
 	void		*object;	/* unused on Haiku, kept for LinuxKPI */
 	vm_pindex_t	pindex;
 	struct vm_page	*lkpi_pnext;	/* lkpi_page.c: pfn hash chain */
+	/* LinuxKPI page_pool (PAGE_IS_LKPI_PAGE below). */
+	uint64_t	dma_addr;	/* dma_addr_t; set by page_pool */
+	struct page_pool *pp;
 };
+
+/*
+ * LinuxKPI's page_pool (linuxkpi_page_pool.c) and skb page recycling only
+ * work when struct page is LinuxKPI's own structure with dma_addr/pp; that
+ * is FreeBSD work in progress, so it is off there. On Haiku struct page is
+ * this structure, so turn it on. Without it page_pool_alloc_frag() returns
+ * NULL and mt76 cannot fill its RX rings: the card then has nowhere to put
+ * MCU replies (first hardware run: every MCU command timed out).
+ */
+#define PAGE_IS_LKPI_PAGE	1
+
+struct page_pool;
 
 #define VM_PAGE_TO_PHYS(m)	((m)->phys_addr)
 #define PHYS_TO_VM_PAGE(pa)	lkpi_phys_to_vm_page(pa)
