@@ -1,0 +1,12 @@
+// Minimal <new> for host-compiler kernel checks (Haiku kernel code uses
+// placement new and nothrow new; the host libstdc++ <new> drags in glibc).
+#ifndef _LKPI_HOSTSHIM_NEW
+#define _LKPI_HOSTSHIM_NEW
+#include <stddef.h>
+namespace std { typedef ::size_t size_t; struct nothrow_t { explicit nothrow_t() = default; };
+	extern const nothrow_t nothrow; }
+inline void* operator new(size_t, void* p) noexcept { return p; }
+inline void* operator new[](size_t, void* p) noexcept { return p; }
+void* operator new(size_t, const std::nothrow_t&) noexcept;
+void* operator new[](size_t, const std::nothrow_t&) noexcept;
+#endif

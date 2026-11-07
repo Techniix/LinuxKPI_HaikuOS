@@ -1,0 +1,21 @@
+diff --git a/src/add-ons/kernel/drivers/network/Jamfile b/src/add-ons/kernel/drivers/network/Jamfile
+index c4d07a4..0d15a30 100644
+--- a/src/add-ons/kernel/drivers/network/Jamfile
++++ b/src/add-ons/kernel/drivers/network/Jamfile
+@@ -1,5 +1,6 @@
+ SubDir HAIKU_TOP src add-ons kernel drivers network ;
+ 
+ HaikuSubInclude ether ;
++HaikuSubInclude lkpi_pcitest ;
+ HaikuSubInclude wlan ;
+ HaikuSubInclude wwan ;
+diff --git a/src/libs/compat/Jamfile b/src/libs/compat/Jamfile
+index 02aeb92..87a7838 100644
+--- a/src/libs/compat/Jamfile
++++ b/src/libs/compat/Jamfile
+@@ -3,4 +3,5 @@ SubDir HAIKU_TOP src libs compat ;
+ SubInclude HAIKU_TOP src libs compat freebsd_network ;
+ SubInclude HAIKU_TOP src libs compat freebsd_iflib ;
+ SubInclude HAIKU_TOP src libs compat freebsd_wlan ;
++SubInclude HAIKU_TOP src libs compat linuxkpi ;
+ SubInclude HAIKU_TOP src libs compat openbsd_wlan ;

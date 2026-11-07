@@ -1,0 +1,7 @@
+*.o
+*.a
+*.tmp
+/build/
+/out/
+__pycache__/
+*.pyc
