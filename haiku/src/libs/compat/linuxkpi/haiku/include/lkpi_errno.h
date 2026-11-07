@@ -24,6 +24,23 @@
 #define EOK	0
 #endif
 
+/* FreeBSD kernel-internal pseudo errors (sys/errno.h, _KERNEL). */
+#ifndef ERESTART
+#define ERESTART	(-1)
+#endif
+#ifndef EJUSTRETURN
+#define EJUSTRETURN	(-2)
+#endif
+#ifndef ENOIOCTL
+#define ENOIOCTL	(-3)
+#endif
+#ifndef EDIRIOCTL
+#define EDIRIOCTL	(-4)
+#endif
+#ifndef ERELOOKUP
+#define ERELOOKUP	(-5)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

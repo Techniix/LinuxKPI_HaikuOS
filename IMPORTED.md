@@ -342,6 +342,111 @@ Source: https://github.com/freebsd/freebsd-src at `b556d9c9ce94a6c9b6e28e8ecef7c
 | linuxkpi/common/src/linux_work.c | sys/compat/linuxkpi/common/src/linux_work.c | BSD-2-Clause (text) |
 | linuxkpi/common/src/linux_xarray.c | sys/compat/linuxkpi/common/src/linux_xarray.c | BSD-2-Clause (text) |
 | linuxkpi/common/src/linuxkpi_page_pool.c | sys/compat/linuxkpi/common/src/linuxkpi_page_pool.c | BSD-2-Clause |
+| linuxkpi/dummy/include/acpi/button.h | sys/compat/linuxkpi/dummy/include/acpi/button.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/asm/agp.h | sys/compat/linuxkpi/dummy/include/asm/agp.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/asm/cacheflush.h | sys/compat/linuxkpi/dummy/include/asm/cacheflush.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/asm/div64.h | sys/compat/linuxkpi/dummy/include/asm/div64.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/asm/intel-mid.h | sys/compat/linuxkpi/dummy/include/asm/intel-mid.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/asm/ioctl.h | sys/compat/linuxkpi/dummy/include/asm/ioctl.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/asm/msr-index.h | sys/compat/linuxkpi/dummy/include/asm/msr-index.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/asm/tsc.h | sys/compat/linuxkpi/dummy/include/asm/tsc.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/kunit/skbuff.h | sys/compat/linuxkpi/dummy/include/kunit/skbuff.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/kunit/test.h | sys/compat/linuxkpi/dummy/include/kunit/test.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/kunit/visibility.h | sys/compat/linuxkpi/dummy/include/kunit/visibility.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/aer.h | sys/compat/linuxkpi/dummy/include/linux/aer.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/ascii85.h | sys/compat/linuxkpi/dummy/include/linux/ascii85.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/async.h | sys/compat/linuxkpi/dummy/include/linux/async.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/bits.h | sys/compat/linuxkpi/dummy/include/linux/bits.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/bug.h | sys/compat/linuxkpi/dummy/include/linux/bug.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/byteorder/generic.h | sys/compat/linuxkpi/dummy/include/linux/byteorder/generic.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/component.h | sys/compat/linuxkpi/dummy/include/linux/component.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/const.h | sys/compat/linuxkpi/dummy/include/linux/const.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/cpufreq.h | sys/compat/linuxkpi/dummy/include/linux/cpufreq.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/ctype.h | sys/compat/linuxkpi/dummy/include/linux/ctype.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/debugobjects.h | sys/compat/linuxkpi/dummy/include/linux/debugobjects.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/dev_printk.h | sys/compat/linuxkpi/dummy/include/linux/dev_printk.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/device/bus.h | sys/compat/linuxkpi/dummy/include/linux/device/bus.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/dma-direction.h | sys/compat/linuxkpi/dummy/include/linux/dma-direction.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/elf.h | sys/compat/linuxkpi/dummy/include/linux/elf.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/fault-inject.h | sys/compat/linuxkpi/dummy/include/linux/fault-inject.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/fdtable.h | sys/compat/linuxkpi/dummy/include/linux/fdtable.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/fpu.h | sys/compat/linuxkpi/dummy/include/linux/fpu.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/hmm.h | sys/compat/linuxkpi/dummy/include/linux/hmm.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/hwmon-sysfs.h | sys/compat/linuxkpi/dummy/include/linux/hwmon-sysfs.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/hwmon.h | sys/compat/linuxkpi/dummy/include/linux/hwmon.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/if.h | sys/compat/linuxkpi/dummy/include/linux/if.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/init.h | sys/compat/linuxkpi/dummy/include/linux/init.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/input.h | sys/compat/linuxkpi/dummy/include/linux/input.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/intel-iommu.h | sys/compat/linuxkpi/dummy/include/linux/intel-iommu.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/irq.h | sys/compat/linuxkpi/dummy/include/linux/irq.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/irqflags.h | sys/compat/linuxkpi/dummy/include/linux/irqflags.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/kdebug.h | sys/compat/linuxkpi/dummy/include/linux/kdebug.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/kgdb.h | sys/compat/linuxkpi/dummy/include/linux/kgdb.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/list_sort.h | sys/compat/linuxkpi/dummy/include/linux/list_sort.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/mei_aux.h | sys/compat/linuxkpi/dummy/include/linux/mei_aux.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/mem_encrypt.h | sys/compat/linuxkpi/dummy/include/linux/mem_encrypt.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/mempolicy.h | sys/compat/linuxkpi/dummy/include/linux/mempolicy.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/memremap.h | sys/compat/linuxkpi/dummy/include/linux/memremap.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/mfd/intel_soc_pmic.h | sys/compat/linuxkpi/dummy/include/linux/mfd/intel_soc_pmic.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/mmc/card.h | sys/compat/linuxkpi/dummy/include/linux/mmc/card.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/mmc/core.h | sys/compat/linuxkpi/dummy/include/linux/mmc/core.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/mmc/host.h | sys/compat/linuxkpi/dummy/include/linux/mmc/host.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/mmc/mmc.h | sys/compat/linuxkpi/dummy/include/linux/mmc/mmc.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/mmc/sd.h | sys/compat/linuxkpi/dummy/include/linux/mmc/sd.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/mmc/sdio.h | sys/compat/linuxkpi/dummy/include/linux/mmc/sdio.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/mmc/sdio_func.h | sys/compat/linuxkpi/dummy/include/linux/mmc/sdio_func.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/mmc/sdio_ids.h | sys/compat/linuxkpi/dummy/include/linux/mmc/sdio_ids.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/mount.h | sys/compat/linuxkpi/dummy/include/linux/mount.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/msi.h | sys/compat/linuxkpi/dummy/include/linux/msi.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/nmi.h | sys/compat/linuxkpi/dummy/include/linux/nmi.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/nvmem-consumer.h | sys/compat/linuxkpi/dummy/include/linux/nvmem-consumer.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/of_address.h | sys/compat/linuxkpi/dummy/include/linux/of_address.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/of_device.h | sys/compat/linuxkpi/dummy/include/linux/of_device.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/of_irq.h | sys/compat/linuxkpi/dummy/include/linux/of_irq.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/of_net.h | sys/compat/linuxkpi/dummy/include/linux/of_net.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/oom.h | sys/compat/linuxkpi/dummy/include/linux/oom.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/pci-p2pdma.h | sys/compat/linuxkpi/dummy/include/linux/pci-p2pdma.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/percpu-defs.h | sys/compat/linuxkpi/dummy/include/linux/percpu-defs.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/percpu.h | sys/compat/linuxkpi/dummy/include/linux/percpu.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/pgtable.h | sys/compat/linuxkpi/dummy/include/linux/pgtable.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/plist.h | sys/compat/linuxkpi/dummy/include/linux/plist.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/pnp.h | sys/compat/linuxkpi/dummy/include/linux/pnp.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/prandom.h | sys/compat/linuxkpi/dummy/include/linux/prandom.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/property.h | sys/compat/linuxkpi/dummy/include/linux/property.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/pseudo_fs.h | sys/compat/linuxkpi/dummy/include/linux/pseudo_fs.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/regmap.h | sys/compat/linuxkpi/dummy/include/linux/regmap.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/relay.h | sys/compat/linuxkpi/dummy/include/linux/relay.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/remoteproc.h | sys/compat/linuxkpi/dummy/include/linux/remoteproc.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/rtnetlink.h | sys/compat/linuxkpi/dummy/include/linux/rtnetlink.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/sched/clock.h | sys/compat/linuxkpi/dummy/include/linux/sched/clock.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/sched/signal.h | sys/compat/linuxkpi/dummy/include/linux/sched/signal.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/sched/task.h | sys/compat/linuxkpi/dummy/include/linux/sched/task.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/spinlock_types.h | sys/compat/linuxkpi/dummy/include/linux/spinlock_types.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/sprintf.h | sys/compat/linuxkpi/dummy/include/linux/sprintf.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/stacktrace.h | sys/compat/linuxkpi/dummy/include/linux/stacktrace.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/stat.h | sys/compat/linuxkpi/dummy/include/linux/stat.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/stop_machine.h | sys/compat/linuxkpi/dummy/include/linux/stop_machine.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/swiotlb.h | sys/compat/linuxkpi/dummy/include/linux/swiotlb.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/syscalls.h | sys/compat/linuxkpi/dummy/include/linux/syscalls.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/sysfb.h | sys/compat/linuxkpi/dummy/include/linux/sysfb.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/sysrq.h | sys/compat/linuxkpi/dummy/include/linux/sysrq.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/thermal.h | sys/compat/linuxkpi/dummy/include/linux/thermal.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/time64.h | sys/compat/linuxkpi/dummy/include/linux/time64.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/timekeeping.h | sys/compat/linuxkpi/dummy/include/linux/timekeeping.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/tty.h | sys/compat/linuxkpi/dummy/include/linux/tty.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/util_macros.h | sys/compat/linuxkpi/dummy/include/linux/util_macros.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/version.h | sys/compat/linuxkpi/dummy/include/linux/version.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/vt.h | sys/compat/linuxkpi/dummy/include/linux/vt.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/linux/zlib.h | sys/compat/linuxkpi/dummy/include/linux/zlib.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/net/gso.h | sys/compat/linuxkpi/dummy/include/net/gso.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/net/rtnetlink.h | sys/compat/linuxkpi/dummy/include/net/rtnetlink.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/trace/define_trace.h | sys/compat/linuxkpi/dummy/include/trace/define_trace.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/uapi/linux/if_arp.h | sys/compat/linuxkpi/dummy/include/uapi/linux/if_arp.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/uapi/linux/sched/types.h | sys/compat/linuxkpi/dummy/include/uapi/linux/sched/types.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/video/nomodeset.h | sys/compat/linuxkpi/dummy/include/video/nomodeset.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/video/of_display_timing.h | sys/compat/linuxkpi/dummy/include/video/of_display_timing.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/video/of_videomode.h | sys/compat/linuxkpi/dummy/include/video/of_videomode.h | **NO LICENSE TEXT — review** |
+| linuxkpi/dummy/include/video/videomode.h | sys/compat/linuxkpi/dummy/include/video/videomode.h | **NO LICENSE TEXT — review** |
 | linuxkpi/freebsd/ck/include/ck_array.h | sys/contrib/ck/include/ck_array.h | BSD-2-Clause (text) |
 | linuxkpi/freebsd/ck/include/ck_backoff.h | sys/contrib/ck/include/ck_backoff.h | BSD-2-Clause (text) |
 | linuxkpi/freebsd/ck/include/ck_barrier.h | sys/contrib/ck/include/ck_barrier.h | BSD-2-Clause (text) |
@@ -417,6 +522,97 @@ Source: https://github.com/freebsd/freebsd-src at `b556d9c9ce94a6c9b6e28e8ecef7c
 | linuxkpi_wlan/imported/linux_80211_macops.c | sys/compat/linuxkpi/common/src/linux_80211_macops.c | BSD-2-Clause (text) |
 | linuxkpi_wlan/imported/linuxkpi_80211_pm.c | sys/compat/linuxkpi/common/src/linuxkpi_80211_pm.c | BSD-2-Clause |
 
+mt76 files below are verbatim except for one mechanical substitution made by
+the import script: `defined(__FreeBSD__)` becomes
+`(defined(__FreeBSD__) || defined(__HAIKU__))`, so FreeBSD's adaptations apply to Haiku.
+
+| Path in this repo | FreeBSD path | License |
+|---|---|---|
+| wlan/mt7921e/imported/mt76/Kconfig | sys/contrib/dev/mediatek/mt76/Kconfig | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/agg-rx.c | sys/contrib/dev/mediatek/mt76/agg-rx.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/channel.c | sys/contrib/dev/mediatek/mt76/channel.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/debugfs.c | sys/contrib/dev/mediatek/mt76/debugfs.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/dma.c | sys/contrib/dev/mediatek/mt76/dma.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/dma.h | sys/contrib/dev/mediatek/mt76/dma.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/eeprom.c | sys/contrib/dev/mediatek/mt76/eeprom.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mac80211.c | sys/contrib/dev/mediatek/mt76/mac80211.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mcu.c | sys/contrib/dev/mediatek/mt76/mcu.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mmio.c | sys/contrib/dev/mediatek/mt76/mmio.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76.h | sys/contrib/dev/mediatek/mt76/mt76.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76_connac.h | sys/contrib/dev/mediatek/mt76/mt76_connac.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76_connac2_mac.h | sys/contrib/dev/mediatek/mt76/mt76_connac2_mac.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76_connac3_mac.c | sys/contrib/dev/mediatek/mt76/mt76_connac3_mac.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76_connac3_mac.h | sys/contrib/dev/mediatek/mt76/mt76_connac3_mac.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76_connac_mac.c | sys/contrib/dev/mediatek/mt76/mt76_connac_mac.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76_connac_mcu.c | sys/contrib/dev/mediatek/mt76/mt76_connac_mcu.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76_connac_mcu.h | sys/contrib/dev/mediatek/mt76/mt76_connac_mcu.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02.h | sys/contrib/dev/mediatek/mt76/mt76x02.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_beacon.c | sys/contrib/dev/mediatek/mt76/mt76x02_beacon.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_debugfs.c | sys/contrib/dev/mediatek/mt76/mt76x02_debugfs.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_dfs.c | sys/contrib/dev/mediatek/mt76/mt76x02_dfs.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_dfs.h | sys/contrib/dev/mediatek/mt76/mt76x02_dfs.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_dma.h | sys/contrib/dev/mediatek/mt76/mt76x02_dma.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_eeprom.c | sys/contrib/dev/mediatek/mt76/mt76x02_eeprom.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_eeprom.h | sys/contrib/dev/mediatek/mt76/mt76x02_eeprom.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_mac.c | sys/contrib/dev/mediatek/mt76/mt76x02_mac.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_mac.h | sys/contrib/dev/mediatek/mt76/mt76x02_mac.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_mcu.c | sys/contrib/dev/mediatek/mt76/mt76x02_mcu.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_mcu.h | sys/contrib/dev/mediatek/mt76/mt76x02_mcu.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_mmio.c | sys/contrib/dev/mediatek/mt76/mt76x02_mmio.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_phy.c | sys/contrib/dev/mediatek/mt76/mt76x02_phy.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_phy.h | sys/contrib/dev/mediatek/mt76/mt76x02_phy.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_regs.h | sys/contrib/dev/mediatek/mt76/mt76x02_regs.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_trace.c | sys/contrib/dev/mediatek/mt76/mt76x02_trace.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_trace.h | sys/contrib/dev/mediatek/mt76/mt76x02_trace.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_txrx.c | sys/contrib/dev/mediatek/mt76/mt76x02_txrx.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_usb.h | sys/contrib/dev/mediatek/mt76/mt76x02_usb.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_usb_core.c | sys/contrib/dev/mediatek/mt76/mt76x02_usb_core.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_usb_mcu.c | sys/contrib/dev/mediatek/mt76/mt76x02_usb_mcu.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt76x02_util.c | sys/contrib/dev/mediatek/mt76/mt76x02_util.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/debugfs.c | sys/contrib/dev/mediatek/mt76/mt7921/debugfs.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/init.c | sys/contrib/dev/mediatek/mt76/mt7921/init.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/mac.c | sys/contrib/dev/mediatek/mt76/mt7921/mac.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/main.c | sys/contrib/dev/mediatek/mt76/mt7921/main.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/mcu.c | sys/contrib/dev/mediatek/mt76/mt7921/mcu.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/mcu.h | sys/contrib/dev/mediatek/mt76/mt7921/mcu.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/mt7921.h | sys/contrib/dev/mediatek/mt76/mt7921/mt7921.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/pci.c | sys/contrib/dev/mediatek/mt76/mt7921/pci.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/pci_mac.c | sys/contrib/dev/mediatek/mt76/mt7921/pci_mac.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/pci_mcu.c | sys/contrib/dev/mediatek/mt76/mt7921/pci_mcu.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/regs.h | sys/contrib/dev/mediatek/mt76/mt7921/regs.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/sdio.c | sys/contrib/dev/mediatek/mt76/mt7921/sdio.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/sdio_mac.c | sys/contrib/dev/mediatek/mt76/mt7921/sdio_mac.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/sdio_mcu.c | sys/contrib/dev/mediatek/mt76/mt7921/sdio_mcu.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/testmode.c | sys/contrib/dev/mediatek/mt76/mt7921/testmode.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt7921/usb.c | sys/contrib/dev/mediatek/mt76/mt7921/usb.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt792x.h | sys/contrib/dev/mediatek/mt76/mt792x.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt792x_acpi_sar.c | sys/contrib/dev/mediatek/mt76/mt792x_acpi_sar.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt792x_acpi_sar.h | sys/contrib/dev/mediatek/mt76/mt792x_acpi_sar.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt792x_core.c | sys/contrib/dev/mediatek/mt76/mt792x_core.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt792x_debugfs.c | sys/contrib/dev/mediatek/mt76/mt792x_debugfs.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt792x_dma.c | sys/contrib/dev/mediatek/mt76/mt792x_dma.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt792x_mac.c | sys/contrib/dev/mediatek/mt76/mt792x_mac.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt792x_regs.h | sys/contrib/dev/mediatek/mt76/mt792x_regs.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt792x_trace.c | sys/contrib/dev/mediatek/mt76/mt792x_trace.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt792x_trace.h | sys/contrib/dev/mediatek/mt76/mt792x_trace.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/mt792x_usb.c | sys/contrib/dev/mediatek/mt76/mt792x_usb.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/pci.c | sys/contrib/dev/mediatek/mt76/pci.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/scan.c | sys/contrib/dev/mediatek/mt76/scan.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/sdio.c | sys/contrib/dev/mediatek/mt76/sdio.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/sdio.h | sys/contrib/dev/mediatek/mt76/sdio.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/sdio_txrx.c | sys/contrib/dev/mediatek/mt76/sdio_txrx.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/testmode.c | sys/contrib/dev/mediatek/mt76/testmode.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/testmode.h | sys/contrib/dev/mediatek/mt76/testmode.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/trace.c | sys/contrib/dev/mediatek/mt76/trace.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/trace.h | sys/contrib/dev/mediatek/mt76/trace.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/tx.c | sys/contrib/dev/mediatek/mt76/tx.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/usb.c | sys/contrib/dev/mediatek/mt76/usb.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/usb_trace.c | sys/contrib/dev/mediatek/mt76/usb_trace.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/usb_trace.h | sys/contrib/dev/mediatek/mt76/usb_trace.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/util.c | sys/contrib/dev/mediatek/mt76/util.c | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/util.h | sys/contrib/dev/mediatek/mt76/util.h | BSD-3-Clause-Clear |
+| wlan/mt7921e/imported/mt76/wed.c | sys/contrib/dev/mediatek/mt76/wed.c | BSD-3-Clause-Clear |
+
 ## Generated from imported files
 
 Regenerate after every import; both scripts fail if FreeBSD changed an adapted spot.
@@ -425,6 +621,7 @@ Regenerate after every import; both scripts fail if FreeBSD changed an adapted s
 |---|---|---|
 | linuxkpi/haiku/lkpi_compat.c | common/src/linux_compat.c (generic part, verbatim) | tools/extract-compat.py |
 | linuxkpi/haiku/lkpi_rcu.c | common/src/linux_rcu.c (2 adaptations) | tools/derive.py |
+| linuxkpi/haiku/include/net/mac80211.h | common/include/net/mac80211.h (1 adaptation) | tools/derive.py |
 
 ## Written for Haiku (MIT unless the file says otherwise)
 
@@ -435,27 +632,35 @@ lkpi_pci.c is derived from FreeBSD linux_pci.c and keeps its BSD-2-Clause notice
 | linuxkpi/haiku/Jamfile | MIT |
 | linuxkpi/haiku/include/dev/pci/pci_private.h | MIT |
 | linuxkpi/haiku/include/dev/pci/pcivar.h | MIT |
-| linuxkpi/haiku/include/linux/bug.h | MIT |
+| linuxkpi/haiku/include/fs/pseudofs/pseudofs.h | MIT |
 | linuxkpi/haiku/include/lkpi_errno.h | MIT |
 | linuxkpi/haiku/include/lkpi_errno_redefine.h | MIT |
 | linuxkpi/haiku/include/lkpi_haiku_kern.h | MIT |
 | linuxkpi/haiku/include/lkpi_haiku_kpi.h | MIT |
 | linuxkpi/haiku/include/lkpi_haiku_wrap.h | MIT |
 | linuxkpi/haiku/include/machine/atomic.h | MIT |
+| linuxkpi/haiku/include/machine/cputypes.h | MIT |
 | linuxkpi/haiku/include/machine/md_var.h | MIT |
 | linuxkpi/haiku/include/machine/vm.h | MIT |
+| linuxkpi/haiku/include/net/if_var.h | MIT |
 | linuxkpi/haiku/include/netinet/in_pcb.h | MIT |
 | linuxkpi/haiku/include/netinet/tcp_lro.h | MIT |
 | linuxkpi/haiku/include/netinet6/in6_var.h | MIT |
 | linuxkpi/haiku/include/netinet6/nd6.h | MIT |
+| linuxkpi/haiku/include/netlink/netlink.h | MIT |
 | linuxkpi/haiku/include/opt_ddb.h | MIT |
 | linuxkpi/haiku/include/opt_global.h | MIT |
 | linuxkpi/haiku/include/opt_stack.h | MIT |
 | linuxkpi/haiku/include/sys/_types.h | MIT |
 | linuxkpi/haiku/include/sys/backlight.h | MIT |
 | linuxkpi/haiku/include/sys/bus.h | MIT |
+| linuxkpi/haiku/include/sys/capsicum.h | MIT |
 | linuxkpi/haiku/include/sys/cpuset.h | MIT |
 | linuxkpi/haiku/include/sys/errno.h | MIT |
+| linuxkpi/haiku/include/sys/fcntl.h | MIT |
+| linuxkpi/haiku/include/sys/file.h | MIT |
+| linuxkpi/haiku/include/sys/filedesc.h | MIT |
+| linuxkpi/haiku/include/sys/filio.h | MIT |
 | linuxkpi/haiku/include/sys/gtaskqueue.h | MIT |
 | linuxkpi/haiku/include/sys/interrupt.h | MIT |
 | linuxkpi/haiku/include/sys/jail.h | MIT |
@@ -470,19 +675,26 @@ lkpi_pci.c is derived from FreeBSD linux_pci.c and keeps its BSD-2-Clause notice
 | linuxkpi/haiku/include/sys/refcount.h | MIT |
 | linuxkpi/haiku/include/sys/rwlock.h | MIT |
 | linuxkpi/haiku/include/sys/sched.h | MIT |
+| linuxkpi/haiku/include/sys/selinfo.h | MIT |
+| linuxkpi/haiku/include/sys/sema.h | MIT |
 | linuxkpi/haiku/include/sys/sf_buf.h | MIT |
+| linuxkpi/haiku/include/sys/sglist.h | MIT |
 | linuxkpi/haiku/include/sys/signalvar.h | MIT |
 | linuxkpi/haiku/include/sys/sleepqueue.h | MIT |
 | linuxkpi/haiku/include/sys/smp.h | MIT |
 | linuxkpi/haiku/include/sys/socketvar.h | MIT |
+| linuxkpi/haiku/include/sys/stack.h | MIT |
 | linuxkpi/haiku/include/sys/stdarg.h | MIT |
 | linuxkpi/haiku/include/sys/stddef.h | MIT |
 | linuxkpi/haiku/include/sys/stdint.h | MIT |
 | linuxkpi/haiku/include/sys/sx.h | MIT |
+| linuxkpi/haiku/include/sys/syscall.h | MIT |
 | linuxkpi/haiku/include/sys/syscallsubr.h | MIT |
 | linuxkpi/haiku/include/sys/sysctl.h | MIT |
+| linuxkpi/haiku/include/sys/sysent.h | MIT |
 | linuxkpi/haiku/include/sys/syslog.h | MIT |
 | linuxkpi/haiku/include/sys/unistd.h | MIT |
+| linuxkpi/haiku/include/sys/user.h | MIT |
 | linuxkpi/haiku/include/sys/vmmeter.h | MIT |
 | linuxkpi/haiku/include/sys/vnode.h | MIT |
 | linuxkpi/haiku/include/vm/pmap.h | MIT |
@@ -494,8 +706,11 @@ lkpi_pci.c is derived from FreeBSD linux_pci.c and keeps its BSD-2-Clause notice
 | linuxkpi/haiku/include/vm/vm_object.h | MIT |
 | linuxkpi/haiku/include/vm/vm_page.h | MIT |
 | linuxkpi/haiku/include/vm/vm_pageout.h | MIT |
+| linuxkpi/haiku/include/vm/vm_pager.h | MIT |
 | linuxkpi/haiku/include/vm/vm_param.h | MIT |
+| linuxkpi/haiku/include/vm/vm_radix.h | MIT |
 | linuxkpi/haiku/lkpi_compat_haiku.c | MIT |
+| linuxkpi/haiku/lkpi_dma.c | MIT |
 | linuxkpi/haiku/lkpi_errno.c | MIT |
 | linuxkpi/haiku/lkpi_errno_list.h | MIT |
 | linuxkpi/haiku/lkpi_gtaskqueue.c | MIT |
@@ -505,7 +720,9 @@ lkpi_pci.c is derived from FreeBSD linux_pci.c and keeps its BSD-2-Clause notice
 | linuxkpi/haiku/lkpi_newbus.c | MIT |
 | linuxkpi/haiku/lkpi_page.c | MIT |
 | linuxkpi/haiku/lkpi_pci.c | BSD-2-Clause (text) |
+| linuxkpi/haiku/lkpi_sema.c | MIT |
 | linuxkpi/haiku/lkpi_sx.c | MIT |
 | linuxkpi/haiku/lkpi_sysinit.c | MIT |
 | linuxkpi/haiku/lkpi_thread.cpp | MIT |
 | linuxkpi/haiku/lkpi_uma.cpp | MIT |
+| linuxkpi_wlan/haiku/lkpi_wlan_haiku.c | MIT |

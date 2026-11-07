@@ -15,6 +15,8 @@
 #include <sys/sleepqueue.h>
 
 void lkpi_dpcpu_init(void);	/* lkpi_misc.c */
+void lkpi_jiffies_init(void);	/* lkpi_thread.cpp */
+void lkpi_jiffies_uninit(void);
 
 #include <KernelExport.h>
 
@@ -72,6 +74,7 @@ lkpi_sysinit_run(void *arg)
 
 	lkpi_sleepq_init();
 	lkpi_dpcpu_init();	/* before any SYSINIT touches DPCPU data */
+	lkpi_jiffies_init();
 	n = lkpi_sysinit_collect(SET_BEGIN(__lkpi_sysinit),
 	    SET_LIMIT(__lkpi_sysinit), list);
 	for (i = 0; i < n; i++) {
@@ -94,6 +97,7 @@ lkpi_sysuninit_run(void *arg)
 		dprintf("linuxkpi: sysuninit %s\n", list[i]->name);
 		list[i]->func((void *)list[i]->arg);
 	}
+	lkpi_jiffies_uninit();
 }
 
 /* The single entry in Haiku's own set (struct sysinit from freebsd_network's

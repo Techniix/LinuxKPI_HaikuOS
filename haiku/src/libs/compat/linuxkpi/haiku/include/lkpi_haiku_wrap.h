@@ -28,7 +28,23 @@
 #define bus_dmamap_load(...)	lkpi_errno_from_haiku(bus_dmamap_load(__VA_ARGS__))
 #define bus_dmamem_alloc(...)	lkpi_errno_from_haiku(bus_dmamem_alloc(__VA_ARGS__))
 #define taskqueue_start_threads(...) lkpi_errno_from_haiku(taskqueue_start_threads(__VA_ARGS__))
-#define kthread_add(...)	lkpi_errno_from_haiku(kthread_add(__VA_ARGS__))
+/*
+ * freebsd_network's kthread_add()/sched_add()/sched_prio() use the Haiku
+ * thread_id cast to a struct thread pointer; LinuxKPI dereferences
+ * struct thread (td_lkpi_task). Route LinuxKPI to versions that use our
+ * thread records (lkpi_thread.cpp). kthread_add() returns a FreeBSD errno.
+ */
+int	lkpi_kthread_add(void (*func)(void *), void *arg, void *p,
+	    struct thread **newtdp, int flags, int pages, const char *fmt, ...)
+	    __printflike(7, 8);
+void	lkpi_sched_add(struct thread *td, int flags);
+void	lkpi_sched_prio(struct thread *td, u_char prio);
+#define kthread_add	lkpi_kthread_add
+#define sched_add	lkpi_sched_add
+#define sched_prio	lkpi_sched_prio
+#ifndef SRQ_BORING
+#define SRQ_BORING	0x0000
+#endif
 #define device_attach(...)	lkpi_errno_from_haiku(device_attach(__VA_ARGS__))
 #define device_detach(...)	lkpi_errno_from_haiku(device_detach(__VA_ARGS__))
 

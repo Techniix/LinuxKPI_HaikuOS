@@ -8,8 +8,8 @@ Last updated 2026-11-06. Haiku @ `b9fdc8a9e699`, FreeBSD @ `b556d9c9ce94`.
 |---|---|---|
 | a | LinuxKPI core loads; test driver probes MT7921, maps BAR0, installs MSI | **[V] Passed on hardware 2026-11-06** (MT7922 `14c3:0616`): SYSINITs ran in order, BAR0 mapped, MSI vector 64 installed, clean detach and SYSUNINIT, device unreserved |
 | b | `request_firmware` returns the MT7921 blobs | **[V] Passed on hardware 2026-11-06**: both MT7922 blobs loaded (137632 and 1233748 bytes; crc32 `7a55f5fd`, `2144df1c`) |
-| c | DMA API (`linux_dma_*`), import mt76 + mt7921e, probe and MCU boot | Not started |
-| d | `linuxkpi_wlan` (mac80211 → net80211), scan | Files imported, not compiled or wired in |
+| c | DMA API (`linux_dma_*`), import mt76 + mt7921e, probe and MCU boot | **Builds and links (0 unresolved, branch `stage-c`). Awaiting hardware.** Milestone: syslog shows the WM firmware version |
+| d | `linuxkpi_wlan` (mac80211 → net80211), scan | Compiles and links into `mt7921e` (stage c needs it for probe); scanning untested |
 | e | WPA2 association, DHCP, traffic | Not started |
 | f | Suspend/resume, stability, upstreaming | Not started |
 
@@ -55,3 +55,13 @@ New kernel imports beyond freebsd_network's: `call_all_cpus_sync`,
 - `sysctl` is a no-op.
 - The test driver declines the device after its self-test (see ARCHITECTURE/RESEARCH addendum, item 3), so no network interface appears in stage (a).
 - 44 imported upstream files carry no license header; flagged in `IMPORTED.md`.
+- DMA (stage c): a streaming mapping above the device's DMA mask is bounced
+  through a fresh `contigmalloc()` per mapping (correct, but slow per packet;
+  a bounce pool is future work). Page allocations prefer memory below 4 GiB
+  to make that rare.
+- LinuxKPI 802.11's suspend/resume helper (`linuxkpi_80211_pm.c`) is not
+  built: it needs newbus identify methods Haiku's compat layer lacks.
+- `sched_set_fifo*()` / raised kthread priorities map to Haiku
+  `B_URGENT_DISPLAY_PRIORITY`, not a real-time class.
+- Attach of a LinuxKPI 802.11 driver waits up to 20 s for the driver to
+  register with mac80211 (needed by freebsd_wlan's `start_wlan()`).

@@ -44,7 +44,7 @@
  *    tables collected in the __lkpi_pnp linker set, so no LinuxKPI code runs
  *    in init_hardware. Its attach runs in init_driver, after LinuxKPI's
  *    SYSINITs (and so module_init/pci_register_driver) have run.
- *  - Not yet implemented (stage c): DMA (linux_dma_*), ROM mapping, DRM
+ *  - DMA lives in lkpi_dma.c. Not implemented: ROM mapping, DRM
  *    registration. Not planned: SR-IOV, backlight.
  */
 
@@ -78,10 +78,22 @@ int		lkpi_haiku_pci_bar(device_t dev, int bar, uint64_t *start,
 int		lkpi_haiku_pci_is_msi(device_t dev);
 uint32_t	lkpi_haiku_pci_irq_base(device_t dev);
 
+/* lkpi_dma.c */
+int		linux_pdev_dma_init(struct pci_dev *pdev);
+int		linux_pdev_dma_uninit(struct pci_dev *pdev);
+
 extern struct device linux_root_device;
 extern const struct kobj_type linux_dev_ktype;
 
 int pci_enable_aspm = 0;
+
+/*
+ * Optional step after a successful Linux probe, before Haiku continues the
+ * attach: Haiku's freebsd_wlan start_wlan() runs right after attach returns
+ * and needs the net80211 device, which Linux drivers often register later
+ * from a work queue. Set by lkpi_wlan_haiku.c. Returns a FreeBSD errno.
+ */
+int (*lkpi_pci_attach_wait_hook)(device_t dev);
 
 static struct list_head lkpi_pci_drivers = LINUX_LIST_HEAD_INIT(lkpi_pci_drivers);
 static struct list_head lkpi_pci_devices = LINUX_LIST_HEAD_INIT(lkpi_pci_devices);
@@ -218,6 +230,7 @@ lkpi_pci_dev_release(struct device *dev)
 
 	spin_lock_destroy(&dev->devres_lock);
 	spin_lock_destroy(&pdev->pcie_cap_lock);
+	linux_pdev_dma_uninit(pdev);
 	free(pdev->bus, M_DEVBUF);
 	kfree(pdev->path_name);
 
@@ -269,7 +282,8 @@ lkpi_pci_dev_init_common(device_t dev, struct pci_dev *pdev)
 	INIT_LIST_HEAD(&pdev->dev.devres_head);
 	INIT_LIST_HEAD(&pdev->dev.irqents);
 	INIT_LIST_HEAD(&pdev->links);
-	return (0);
+	/* DMA state (lkpi_dma.c); FreeBSD does this here as well. */
+	return (linux_pdev_dma_init(pdev));
 }
 
 struct pci_dev *
@@ -410,6 +424,15 @@ lkpi_pci_bridge_attach(device_t dev)
 	}
 	pdev = device_get_softc(dev);
 	error = linux_pci_attach_device(dev, pdrv, id, pdev);
+	if (error == 0 && lkpi_pci_attach_wait_hook != NULL) {
+		/* e.g. LinuxKPI 802.11: see lkpi_wlan_haiku.c */
+		error = lkpi_pci_attach_wait_hook(dev);
+		if (error != 0) {
+			device_printf(dev, "LinuxKPI: driver did not finish "
+			    "attaching (%d); detaching it again\n", error);
+			linux_pci_detach_device(pdev);
+		}
+	}
 	return (lkpi_errno_to_haiku(error));
 }
 

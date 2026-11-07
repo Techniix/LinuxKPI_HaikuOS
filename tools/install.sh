@@ -3,10 +3,10 @@
 #
 # Usage: tools/install.sh /path/to/haiku
 #   1. applies patches/haiku/*.patch (skips ones already applied),
-#   2. copies haiku/src/... over the tree.
+#   2. replaces the directories this project owns (OWNED below) with the
+#      repository's copy, so files removed here are removed there too.
 # Re-running is safe. To remove: git -C /path/to/haiku checkout -- . and
-# delete src/libs/compat/linuxkpi and
-# src/add-ons/kernel/drivers/network/lkpi_pcitest.
+# delete the OWNED directories.
 set -eu
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 H=${1:?usage: tools/install.sh /path/to/haiku}
@@ -26,6 +26,15 @@ for p in "$REPO"/patches/haiku/*.patch; do
 		echo "FAILED to apply $(basename "$p"); resolve by hand" >&2
 		exit 1
 	fi
+done
+
+# Directories that exist only because of this project (never Haiku's own).
+OWNED="src/libs/compat/linuxkpi src/libs/compat/linuxkpi_wlan
+	src/add-ons/kernel/drivers/network/lkpi_pcitest
+	src/add-ons/kernel/drivers/network/wlan/mt7921e"
+for d in $OWNED; do
+	[ -d "$REPO/haiku/$d" ] || { echo "install.sh: $d missing in repo" >&2; exit 1; }
+	rm -rf "${H:?}/$d"
 done
 
 (cd "$REPO/haiku" && find src -type f) | while read -r f; do

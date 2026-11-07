@@ -32,9 +32,24 @@ strchrnul(const char *s, int c)
 	return ((char *)s);
 }
 
-#define bitcount32(x)	((uint32_t)__builtin_popcount((uint32_t)(x)))
-#define bitcount64(x)	((uint64_t)__builtin_popcountll((uint64_t)(x)))
-#define bitcountl(x)	((unsigned long)__builtin_popcountl((unsigned long)(x)))
+/* bitcount(9). freebsd_network's sys/types.h has the older __bitcount*
+ * functions; newer FreeBSD (sys/bitcount.h) adds the constant-folding
+ * __const_bitcount*() forms LinuxKPI's linux/bitops.h uses (same text). */
+#ifndef __const_bitcount8
+#define	__const_bitcount8(x) ( \
+    !!((x) & (1 << 0)) + !!((x) & (1 << 1)) + \
+    !!((x) & (1 << 2)) + !!((x) & (1 << 3)) + \
+    !!((x) & (1 << 4)) + !!((x) & (1 << 5)) + \
+    !!((x) & (1 << 6)) + !!((x) & (1 << 7)))
+#define	__const_bitcount16(x) (__const_bitcount8(x) + __const_bitcount8((x) >> 8))
+#define	__const_bitcount32(x) (__const_bitcount16(x) + __const_bitcount16((x) >> 16))
+#define	__const_bitcount64(x) (__const_bitcount32(x) + __const_bitcount32((x) >> 32))
+#endif
+#define	bitcount(x)	__bitcount((u_int)(x))
+#define	bitcountl(x)	__bitcountl((u_long)(x))
+#define	bitcount16(x)	__bitcount16((uint16_t)(x))
+#define	bitcount32(x)	__bitcount32((uint32_t)(x))
+#define	bitcount64(x)	__bitcount64((uint64_t)(x))
 
 /* ilog2 & friends: as FreeBSD sys/libkern.h (LinuxKPI's log2.h relies on
  * them; Haiku's compat libkern.h has fls/flsl only). */
@@ -76,12 +91,16 @@ arc4random_uniform(uint32_t upper)
 	return (r % upper);
 }
 
-/* Linux jiffies: FreeBSD aliases a variable to 'ticks' in assembly. Here
- * the name becomes a call; linux/jiffies.h's "extern unsigned long jiffies;"
- * then declares that function, which is valid C. hz is 1000 on Haiku. */
+/* Linux jiffies: FreeBSD aliases the variable to 'ticks' in assembly. On
+ * Haiku it is a real variable (linux/jiffies.h declares it), kept current
+ * by a 1 ms periodic kernel timer (lkpi_thread.cpp); hz is 1000. A macro
+ * would break drivers that have struct members named 'jiffies' (mt76). */
 unsigned long	lkpi_get_jiffies(void);
-#define jiffies		(lkpi_get_jiffies())
 
+/* The Haiku kernel exports no ffs(); use the builtins (libkern ffs(9)). */
+#ifndef ffs
+#define ffs(x)		__builtin_ffs(x)
+#endif
 #ifndef ffsl
 #define ffsl(x)		__builtin_ffsl(x)
 #endif
@@ -343,6 +362,14 @@ void	pmap_force_invalidate_cache_range(vm_offset_t sva, vm_offset_t eva);
 #define minor(d)		((int)((uint64_t)(d) & 0xffffffff))
 #define makedev(M, m)		((dev_t)(((uint64_t)(M) << 32) | (uint32_t)(m)))
 #endif
+
+/* libkern hexdump(9) (FreeBSD sys/systm.h); lkpi_misc.c */
+void	hexdump(const void *ptr, int length, const char *hdr, int flags);
+#define	HD_COLUMN_MASK	0xff
+#define	HD_DELIM_MASK	0xff00
+#define	HD_OMIT_COUNT	(1 << 16)
+#define	HD_OMIT_HEX	(1 << 17)
+#define	HD_OMIT_CHARS	(1 << 18)
 
 #ifdef __cplusplus
 }

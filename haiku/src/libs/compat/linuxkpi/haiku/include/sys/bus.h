@@ -25,11 +25,21 @@ device_t	devclass_get_device(devclass_t dc, int unit);
 void		bus_topo_lock(void);
 void		bus_topo_unlock(void);
 int		lkpi_bus_rescan(device_t dev);
+/* Newer FreeBSD (15) newbus helpers LinuxKPI 802.11 uses. */
+void		bus_identify_children(device_t dev);
+void		bus_attach_children(device_t dev);
+device_t	device_find_child(device_t dev, const char *classname,
+		    int unit);
+void		device_set_descf(device_t dev, const char *fmt, ...)
+		    __printflike(2, 3);
 #ifdef __cplusplus
 }
 #endif
 
 #define BUS_RESCAN(dev)		lkpi_bus_rescan(dev)
 #define BUS_PASS_DEFAULT	__INT_MAX__
+#ifndef DEVICE_UNIT_ANY
+#define DEVICE_UNIT_ANY		(-1)
+#endif
 
 #endif

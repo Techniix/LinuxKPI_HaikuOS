@@ -22,6 +22,7 @@ rule UseLinuxKPI
 	UseHeaders [ FDirName $(lkpi) freebsd include ] : true ;
 	UseHeaders [ FDirName $(lkpi) freebsd ck include ] : true ;
 	UseHeaders [ FDirName $(lkpi) common include ] : true ;
+	UseHeaders [ FDirName $(lkpi) dummy include ] : true ;
 	UseHeaders [ FDirName $(lkpi) haiku ] : true ;
 	# LinuxKPI includes "compat/linuxkpi/common/include/..." in places.
 	UseHeaders [ FDirName $(HAIKU_TOP) src libs ] : true ;
@@ -41,7 +42,10 @@ rule UseLinuxKPI
 		-include [ FDirName $(lkpi) haiku lkpi_haiku_preinclude.h ]
 		-Wno-unused -Wno-sign-compare -Wno-pointer-sign -Wno-multichar
 		-Werror=implicit-function-declaration -Werror=int-conversion
-		-Werror=incompatible-pointer-types ;
+		-Werror=incompatible-pointer-types
+		# net80211's opt_wlan.h &c. live next to its sources; last resort.
+		-idirafter [ FDirName $(HAIKU_TOP) src libs compat freebsd_wlan
+			net80211 ] ;
 }
 
 # Everything a LinuxKPI-based kernel add-on links, in order. Merge objects

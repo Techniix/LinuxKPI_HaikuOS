@@ -13,6 +13,7 @@
 #include <sys/proc.h>
 #include <sys/sx.h>
 #include <sys/sysctl.h>
+#include <sys/sbuf.h>
 #include <sys/cpuset.h>
 #include <machine/md_var.h>
 #include <sys/socketvar.h>
@@ -339,5 +340,52 @@ lkpi_qsort_r(void *base, size_t nmemb, size_t size,
 			memcpy(b + j * size, b + (j - 1) * size, size);
 			memcpy(b + (j - 1) * size, swap, size);
 		}
+	}
+}
+
+/* sysctl is not registered on Haiku, so handlers never run; keep it valid. */
+struct sbuf *
+sbuf_new_for_sysctl(struct sbuf *s, char *buf, int length,
+    struct sysctl_req *req)
+{
+	return (sbuf_new(s, buf, length, SBUF_FIXEDLEN));
+}
+
+/* hexdump(9): 16 bytes per line, offset, hex and characters to syslog. */
+void
+hexdump(const void *ptr, int length, const char *hdr, int flags)
+{
+	const unsigned char *cp = ptr;
+	char line[128];
+	int cols, i, j, n;
+
+	cols = flags & HD_COLUMN_MASK;
+	if (cols == 0)
+		cols = 16;
+	if (cols > 32)
+		cols = 32;
+	for (i = 0; i < length; i += cols) {
+		n = 0;
+		if ((flags & HD_OMIT_COUNT) == 0)
+			n += snprintf(line + n, sizeof(line) - n, "%04x  ", i);
+		if ((flags & HD_OMIT_HEX) == 0) {
+			for (j = 0; j < cols; j++) {
+				if (i + j < length)
+					n += snprintf(line + n, sizeof(line) - n,
+					    "%02x ", cp[i + j]);
+				else
+					n += snprintf(line + n, sizeof(line) - n,
+					    "   ");
+			}
+		}
+		if ((flags & HD_OMIT_CHARS) == 0) {
+			n += snprintf(line + n, sizeof(line) - n, " |");
+			for (j = 0; j < cols && i + j < length; j++)
+				line[n++] = (cp[i + j] >= ' ' && cp[i + j] <= '~') ?
+				    cp[i + j] : '.';
+			line[n++] = '|';
+			line[n] = '\0';
+		}
+		printf("%s%s\n", hdr != NULL ? hdr : "", line);
 	}
 }

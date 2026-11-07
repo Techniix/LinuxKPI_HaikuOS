@@ -26,8 +26,27 @@ WLAN="linux_80211.c linux_80211.h linux_80211_macops.c linuxkpi_80211_pm.c"
 rm -rf "$LK/common" "$LKW/imported"
 mkdir -p "$LK/common/src" "$LKW/imported"
 cp -R "$SRC/include" "$LK/common/include"
+# FreeBSD's LINUXKPI_INCLUDES also has compat/linuxkpi/dummy/include (empty
+# placeholder headers, e.g. trace/define_trace.h), searched after common.
+rm -rf "$LK/dummy"
+mkdir -p "$LK/dummy"
+cp -R "$FREEBSD_TOP/sys/compat/linuxkpi/dummy/include" "$LK/dummy/include"
 for f in $CORE; do cp "$SRC/src/$f" "$LK/common/src/"; done
 for f in $WLAN; do cp "$SRC/src/$f" "$LKW/imported/"; done
+
+# mt76 (MediaTek), as FreeBSD carries it: the common core plus mt7921.
+MTSRC=$FREEBSD_TOP/sys/contrib/dev/mediatek/mt76
+MT=$REPO/haiku/src/add-ons/kernel/drivers/network/wlan/mt7921e/imported
+rm -rf "$MT"
+mkdir -p "$MT/mt76/mt7921"
+cp "$MTSRC"/*.c "$MTSRC"/*.h "$MT/mt76/"
+[ -f "$MTSRC/Kconfig" ] && cp "$MTSRC/Kconfig" "$MT/mt76/"
+cp "$MTSRC"/mt7921/*.c "$MTSRC"/mt7921/*.h "$MT/mt76/mt7921/"
+# One mechanical substitution, so FreeBSD's adaptations also apply to Haiku
+# (Haiku cannot define __FreeBSD__ globally: net80211's ieee80211_var.h would
+# then select the FreeBSD portability header). Recorded in IMPORTED.md.
+find "$MT" -type f \( -name '*.c' -o -name '*.h' \) -exec \
+	sed -i 's/defined(__FreeBSD__)/(defined(__FreeBSD__) || defined(__HAIKU__))/g' {} +
 
 # Verbatim FreeBSD kernel headers/sources LinuxKPI needs that Haiku's
 # freebsd_network lacks (header-only or self-contained).
@@ -76,6 +95,10 @@ lic() {
 		case $f in src/*) up=sys/compat/linuxkpi/common/src/${f#src/} ;; *) up=sys/compat/linuxkpi/common/$f ;; esac
 		echo "| linuxkpi/common/$f | $up | $(lic "$LK/common/$f") |"
 	done
+	for f in $(cd "$LK/dummy" && find . -type f | sort); do
+		f=${f#./}
+		echo "| linuxkpi/dummy/$f | sys/compat/linuxkpi/dummy/$f | $(lic "$LK/dummy/$f") |"
+	done
 	for f in $(cd "$FB" && find . -type f | sort); do
 		f=${f#./}
 		case $f in include/*) up=sys/${f#include/} ;; ck/*) up=sys/contrib/ck/${f#ck/} ;; src/gsb_crc32_tab.c) up="sys/libkern/gsb_crc32.c (crc32_tab only)" ;; esac
@@ -83,6 +106,17 @@ lic() {
 	done
 	for f in $WLAN; do
 		echo "| linuxkpi_wlan/imported/$f | sys/compat/linuxkpi/common/src/$f | $(lic "$LKW/imported/$f") |"
+	done
+	echo
+	echo "mt76 files below are verbatim except for one mechanical substitution made by"
+	echo "the import script: \`defined(__FreeBSD__)\` becomes"
+	echo "\`(defined(__FreeBSD__) || defined(__HAIKU__))\`, so FreeBSD's adaptations apply to Haiku."
+	echo
+	echo "| Path in this repo | FreeBSD path | License |"
+	echo "|---|---|---|"
+	for f in $(cd "$MT" && find . -type f | sort); do
+		f=${f#./}
+		echo "| wlan/mt7921e/imported/$f | sys/contrib/dev/mediatek/${f} | $(lic "$MT/$f") |"
 	done
 	echo
 	echo "## Generated from imported files"
@@ -93,6 +127,7 @@ lic() {
 	echo "|---|---|---|"
 	echo "| linuxkpi/haiku/lkpi_compat.c | common/src/linux_compat.c (generic part, verbatim) | tools/extract-compat.py |"
 	echo "| linuxkpi/haiku/lkpi_rcu.c | common/src/linux_rcu.c (2 adaptations) | tools/derive.py |"
+	echo "| linuxkpi/haiku/include/net/mac80211.h | common/include/net/mac80211.h (1 adaptation) | tools/derive.py |"
 	echo
 	echo "## Written for Haiku (MIT unless the file says otherwise)"
 	echo
@@ -102,8 +137,12 @@ lic() {
 	echo "|---|---|"
 	for f in $(cd "$LK/haiku" && find . -type f | sort); do
 		f=${f#./}
-		case $f in lkpi_compat.c|lkpi_rcu.c) continue ;; esac
+		case $f in lkpi_compat.c|lkpi_rcu.c|include/net/mac80211.h) continue ;; esac
 		echo "| linuxkpi/haiku/$f | $(lic "$LK/haiku/$f") |"
+	done
+	for f in $(cd "$LKW/haiku" && find . -type f | sort); do
+		f=${f#./}
+		echo "| linuxkpi_wlan/haiku/$f | $(lic "$LKW/haiku/$f") |"
 	done
 } > "$REPO/IMPORTED.md"
 echo "imported $(cd "$LK/common" && find . -type f | wc -l) files; see IMPORTED.md"

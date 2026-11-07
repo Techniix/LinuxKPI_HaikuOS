@@ -45,8 +45,10 @@ KernelMergeObject linuxkpi.o :
 	# Haiku implementations of FreeBSD-specific LinuxKPI parts
 	lkpi_gtaskqueue.c
 	lkpi_misc.c
+	lkpi_dma.c
 	lkpi_page.c
 	lkpi_pci.c
+	lkpi_sema.c
 
 	# imported FreeBSD support code
 	ck_epoch.c
@@ -58,3 +60,4 @@ KernelMergeObject linuxkpi.o :
 # linux_page.c (-> lkpi_page.c), linux_rcu.c (-> lkpi_rcu.c), linux_domain.c.
 
 SubInclude HAIKU_TOP src libs compat linuxkpi haiku ;
+SubInclude HAIKU_TOP src libs compat linuxkpi_wlan ;

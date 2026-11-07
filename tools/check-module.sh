@@ -52,14 +52,14 @@ FBSD="-I$C/freebsd_network/compat -I$C/freebsd_network -I$C/freebsd_wlan -D_KERN
  -Wno-unused -Wno-sign-compare -Wno-error=incompatible-pointer-types -Wno-multichar"
 LK=$REPO/haiku/src/libs/compat/linuxkpi
 LKW=$REPO/haiku/src/libs/compat/linuxkpi_wlan
-LKINC="-Wno-pointer-sign -Werror=implicit-function-declaration -Werror=int-conversion -Werror=incompatible-pointer-types -I$LK/haiku/include -I$LK/freebsd/include -I$LK/freebsd/ck/include -I$LK/common/include -I$LK/haiku -I$REPO/haiku/src/libs -include $LK/haiku/lkpi_haiku_preinclude.h"
+LKINC="-Wno-pointer-sign -Werror=implicit-function-declaration -Werror=int-conversion -Werror=incompatible-pointer-types -I$LK/haiku/include -I$LK/freebsd/include -I$LK/freebsd/ck/include -I$LK/common/include -I$LK/dummy/include -I$LK/haiku -I$REPO/haiku/src/libs -include $LK/haiku/lkpi_haiku_preinclude.h"
 
 case $PROFILE in
 	fbsd)      PFLAGS="$FBSD" ;;
 	shim)      PFLAGS="-I$LK/haiku/include -I$LK/freebsd/include -I$LK/haiku $FBSD -I$C/freebsd_network" ;;
 	wlan)      PFLAGS="-I$C/freebsd_wlan/net80211 $FBSD -DFBSD_DRIVER=1 -Wno-format -Wno-uninitialized" ;;
 	linuxkpi)  PFLAGS="$LKINC $FBSD -I$C/freebsd_wlan -DFBSD_DRIVER=1 " ;;
-	lkpi_wlan) PFLAGS="$LKINC $FBSD -I$C/freebsd_wlan -I$LKW -DFBSD_DRIVER=1 " ;;
+	lkpi_wlan) PFLAGS="$LKINC $FBSD -I$C/freebsd_wlan -I$LKW -DFBSD_DRIVER=1 -idirafter $C/freebsd_wlan/net80211" ;;
 	driver)    PFLAGS="$LKINC $FBSD -I$C/freebsd_wlan -DFBSD_DRIVER=1 -DLINUXKPI_VERSION=70000 ${DRIVER_FLAGS:-}" ;;
 	*) echo "unknown profile $PROFILE" >&2; exit 2 ;;
 esac

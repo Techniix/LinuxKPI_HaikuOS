@@ -91,17 +91,18 @@ lkpi_phys_to_dmap(vm_paddr_t pa)
 	return (m != NULL ? (char *)m->lkpi_kva + (pa & PAGE_MASK) : NULL);
 }
 
+/*
+ * 2^order contiguous pages at or below physical address 'high'. Also used by
+ * lkpi_dma.c for coherent DMA memory (freed again with kmem_free()).
+ */
 struct page *
-linux_alloc_pages(gfp_t flags, unsigned int order)
+lkpi_alloc_pages_below(gfp_t flags, unsigned int order, vm_paddr_t high)
 {
 	unsigned long npages = 1UL << order, i;
 	size_t size = (size_t)PAGE_SIZE << order;
 	struct vm_page *pages;
-	vm_paddr_t high;
 	char *va;
 
-	high = (flags & GFP_DMA32) != 0 ? BUS_SPACE_MAXADDR_32BIT :
-	    BUS_SPACE_MAXADDR;
 	va = contigmalloc(size, M_LKPI_PAGE,
 	    (flags & (M_NOWAIT | M_WAITOK | M_ZERO)), 0, high, PAGE_SIZE, 0);
 	if (va == NULL)
@@ -126,6 +127,27 @@ linux_alloc_pages(gfp_t flags, unsigned int order)
 	pages[0].lkpi_order = order;
 	mtx_unlock(&lkpi_page_lock);
 	return (&pages[0]);
+}
+
+struct page *
+linux_alloc_pages(gfp_t flags, unsigned int order)
+{
+	struct page *page;
+
+	if ((flags & GFP_DMA32) != 0)
+		return (lkpi_alloc_pages_below(flags, order,
+		    BUS_SPACE_MAXADDR_32BIT));
+
+	/*
+	 * Prefer memory below 4 GiB: devices with a 32-bit DMA mask (the
+	 * MT7921/MT7922 among them) can then use pages such as page_pool RX
+	 * buffers directly instead of through a bounce buffer (lkpi_dma.c).
+	 */
+	page = lkpi_alloc_pages_below((flags & ~M_WAITOK) | M_NOWAIT, order,
+	    BUS_SPACE_MAXADDR_32BIT);
+	if (page == NULL)
+		page = lkpi_alloc_pages_below(flags, order, BUS_SPACE_MAXADDR);
+	return (page);
 }
 
 void

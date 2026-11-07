@@ -115,8 +115,9 @@ TAILQ_HEAD(sysctl_ctx_list, sysctl_ctx_entry);
 #define SYSCTL_DECL(name)	extern struct sysctl_oid_list sysctl_##name##_children
 /* expands to a harmless file-scope declaration; arguments are dropped */
 #define __lkpi_sysctl_unused(name)	_Static_assert(1, "sysctl")
+/* A node is an (unregistered) oid so SYSCTL_CHILDREN(&sysctl__x_y) works. */
 #define SYSCTL_NODE(parent, nbr, name, access, handler, descr)	\
-	_Static_assert(1, "sysctl")
+	static struct sysctl_oid sysctl__##parent##_##name __attribute__((unused))
 #define SYSCTL_INT(parent, nbr, name, access, ptr, val, descr)	__lkpi_sysctl_unused(parent##_##name)
 #define SYSCTL_UINT(parent, nbr, name, access, ptr, val, descr)	__lkpi_sysctl_unused(parent##_##name)
 #define SYSCTL_LONG(parent, nbr, name, access, ptr, val, descr)	__lkpi_sysctl_unused(parent##_##name)
@@ -134,6 +135,9 @@ TAILQ_HEAD(sysctl_ctx_list, sysctl_ctx_entry);
 #ifdef __cplusplus
 extern "C" {
 #endif
+struct sbuf;
+struct sbuf	*sbuf_new_for_sysctl(struct sbuf *s, char *buf, int length,
+		    struct sysctl_req *req);
 struct sysctl_oid *lkpi_sysctl_dummy_oid(struct sysctl_ctx_list *ctx,
 	    struct sysctl_oid_list *parent, const char *name, void *arg1,
 	    intmax_t arg2);

@@ -11,6 +11,8 @@
 #include <sys/param.h>
 #include <sys/bus.h>
 #include <sys/mutex.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "device.h"
@@ -124,4 +126,48 @@ int
 lkpi_bus_rescan(device_t dev)
 {
 	return (lkpi_errno_from_haiku(ENODEV));
+}
+
+/* No identify methods on Haiku: drivers are matched by probe only. */
+void
+bus_identify_children(device_t dev)
+{
+}
+
+void
+bus_attach_children(device_t dev)
+{
+	bus_generic_attach(dev);
+}
+
+device_t
+device_find_child(device_t dev, const char *classname, int unit)
+{
+	device_t *children, child = NULL;
+	int count, i;
+
+	if (device_get_children(dev, &children, &count) != 0)
+		return (NULL);
+	for (i = 0; i < count; i++) {
+		if (strcmp(device_get_name(children[i]), classname) == 0 &&
+		    (unit == DEVICE_UNIT_ANY ||
+		    device_get_unit(children[i]) == unit)) {
+			child = children[i];
+			break;
+		}
+	}
+	free(children);	/* plain malloc() in freebsd_network device.c */
+	return (child);
+}
+
+void
+device_set_descf(device_t dev, const char *fmt, ...)
+{
+	char buf[128];
+	va_list ap;
+
+	va_start(ap, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+	device_set_desc_copy(dev, buf);
 }

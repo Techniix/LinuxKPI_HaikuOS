@@ -132,6 +132,9 @@ extra detail: `threads`, `thread`, `syslog` (shows the last log lines).
    ```sh
    rm /boot/system/non-packaged/add-ons/kernel/drivers/dev/net/lkpi_pcitest
    rm /boot/system/non-packaged/add-ons/kernel/drivers/bin/lkpi_pcitest
+   # stage (c): the same two files are called mt7921e
+   rm /boot/system/non-packaged/add-ons/kernel/drivers/dev/net/mt7921e
+   rm /boot/system/non-packaged/add-ons/kernel/drivers/bin/mt7921e
    ```
 
 4. Reboot normally. The previous boot's log is in `/var/log/syslog.old`.
@@ -140,3 +143,83 @@ extra detail: `threads`, `thread`, `syslog` (shows the last log lines).
 
 The same two `rm` commands, plus optionally
 `rm -r /boot/system/non-packaged/data/firmware/lkpi_pcitest`.
+
+---
+
+# Stage (c): the real mt7921e driver
+
+Branch `stage-c`. This is the first stage where the card does DMA into
+memory, so a bug can crash the machine or corrupt memory. Save your work,
+keep ethernet plugged in, and know the recovery steps above.
+
+**Unlike `lkpi_pcitest`, `mt7921e` stays loaded and Haiku loads it at every
+boot** (the network stack opens `/dev/net`). If it crashes during boot, use
+*Select safe mode options → Disable user add-ons* and remove it (section 4).
+
+## c.1 Remove the stage (a)/(b) test driver
+
+Both drivers match the same card; only one can own it.
+
+```sh
+D=/boot/system/non-packaged/add-ons/kernel/drivers
+rm $D/dev/net/lkpi_pcitest $D/bin/lkpi_pcitest
+```
+
+## c.2 Build
+
+```sh
+cd ~/hk/LinuxKPI_HaikuOS && git fetch && git checkout stage-c && git pull
+tools/install.sh ~/hk/haiku
+cd ~/hk/haiku/generated.x86_64
+jam -q -j12 mt7921e
+```
+
+## c.3 Install (non-packaged) and firmware
+
+```sh
+D=/boot/system/non-packaged/add-ons/kernel/drivers
+cp objects/haiku/x86_64/release/add-ons/kernel/drivers/network/wlan/mt7921e/mt7921e $D/bin/
+ln -sf ../../bin/mt7921e $D/dev/net/mt7921e
+
+F=/boot/system/non-packaged/data/firmware/mt7921e
+mkdir -p $F
+cp /boot/system/non-packaged/data/firmware/lkpi_pcitest/WIFI_* $F/
+ls -l $F
+```
+
+(MT7921 parts, `7961`/`0608`, need the `WIFI_MT7961_*` files instead; see the
+table in section 2.)
+
+## c.4 Run
+
+```sh
+~/rescan mt7921e
+sleep 5
+grep -E "mt7921|mt76|linuxkpi|LinuxKPI|lkpi|wlan" /var/log/syslog | tail -60
+```
+
+### What success looks like
+
+In roughly this order (values differ):
+
+```
+... ASIC revision: 7922....
+... HW/SW Version: 0x8a108a10, Build Time: 2025...
+... WM Firmware Version: ____000000, Build Time: 2025...
+... LinuxKPI 802.11: lkpi0 registered after NNN ms
+... start_wlan: wlan started.
+```
+
+The **WM Firmware Version** line is the stage (c) milestone: the card's
+microcontroller booted the firmware we sent over DMA and answered.
+`ifconfig` should then list a wireless interface; scanning and connecting
+are stages (d) and (e) and may not work yet.
+
+### What to send back
+
+- the whole `grep` output above (or `tail -150 /var/log/syslog`),
+- the KDL `bt` photo if it crashed,
+- `listdev | grep -B2 -A2 -i 14c3` and `uname -a` if anything looks off.
+
+If it says `no wireless device registered within 20 s`, the firmware was not
+found or did not start; the lines before it say which.

@@ -18,7 +18,8 @@ Versions: FreeBSD `main` @ `b556d9c9ce94`, Haiku @ `b9fdc8a9e699`.
 1. `haiku/include` — Haiku overlays of FreeBSD headers that freebsd_network
    lacks or gets wrong for LinuxKPI (`sys/proc.h`, `sys/sx.h`, `machine/atomic.h`, `vm/*` …)
 2. `freebsd/include`, `freebsd/ck/include` — verbatim FreeBSD headers
-3. `common/include` — LinuxKPI `linux/*`, `asm/*`
+3. `common/include` — LinuxKPI `linux/*`, `asm/*`, then `dummy/include`
+   (FreeBSD's empty placeholder headers, as in its `LINUXKPI_INCLUDES`)
 4. `haiku/`, `src/libs`, then the freebsd_network compat dirs, then system headers
 
 Every LinuxKPI unit is compiled with `-include lkpi_haiku_preinclude.h`, which:
@@ -58,6 +59,26 @@ Every LinuxKPI unit is compiled with `-include lkpi_haiku_preinclude.h`, which:
 | `SYSINIT` ordering | own linker set + sort | `lkpi_sysinit.c` |
 | interrupts | freebsd_network threaded handlers, MSI only | `lkpi_pci.c`, driver glue |
 | firmware | freebsd_network `firmware(9)` → `/boot/system/[non-packaged/]data/firmware/<driver>/` | glue name map |
+| DMA API | bus address = physical (x86, no IOMMU, coherent); bounce below the DMA mask via `vm_memcpy_{to,from}_physical()`; coherent memory below the coherent mask | `lkpi_dma.c` |
+| `jiffies` | real variable, updated by a 1 ms periodic kernel timer | `lkpi_thread.cpp` |
+| kthreads | `kthread_add`/`sched_add`/`sched_prio` routed to versions that use LinuxKPI thread records (freebsd_network casts thread ids to `struct thread *`) | `lkpi_thread.cpp`, `lkpi_haiku_wrap.h` |
+| `sema(9)` | counter + `mtx` + `cv` | `lkpi_sema.c` |
+| 802.11 attach | wait (Giant released) until mac80211 registration created the net80211 device, so freebsd_wlan's `start_wlan()` finds it | `linuxkpi_wlan/haiku/lkpi_wlan_haiku.c` |
+
+## Wi-Fi drivers (stage c+)
+
+```
+ mt7921e add-on = glue.c (HAIKU_FBSD_WLAN_DRIVER_GLUE, FBSD_WLAN)
+                + mt7921e_mt7921.o, mt7921e_mt76.o   (imported mt76, LINUXKPI_VERSION 70000)
+                + linuxkpi_wlan.o                    (LinuxKPI mac80211 on net80211)
+                + linuxkpi.o, linuxkpi_haiku.o
+                + freebsd_wlan.a (net80211), libfreebsd_network.a
+```
+
+mt76 is imported as FreeBSD carries it, with one mechanical substitution
+(`defined(__FreeBSD__)` → `(defined(__FreeBSD__) || defined(__HAIKU__))`) so
+FreeBSD's adaptations apply. Haiku cannot define `__FreeBSD__` itself:
+net80211's `ieee80211_var.h` would pick the FreeBSD portability header.
 
 ## Haiku changes
 
@@ -69,6 +90,7 @@ Kept in `patches/haiku/` against `BASE_COMMIT`:
 | 0002 | net80211 key accessors used by `linuxkpi_wlan` |
 | 0003 | build hooks for `linuxkpi` and `lkpi_pcitest` |
 | 0004 | **upstream bug:** compat `atomic_set_*` must be OR (atomic(9)), not store |
+| 0005 | build hook for `mt7921e` |
 
 ## Generated files
 
@@ -76,5 +98,6 @@ Kept in `patches/haiku/` against `BASE_COMMIT`:
 |---|---|---|
 | `haiku/lkpi_compat.c` | `tools/extract-compat.py` | `linux_compat.c` (keeps 66 functions; cdev/file/vma parts dropped) |
 | `haiku/lkpi_rcu.c` | `tools/derive.py` | `linux_rcu.c` |
+| `haiku/include/net/mac80211.h` | `tools/derive.py` | `common/include/net/mac80211.h` (`_k` key back-pointer on Haiku) |
 | `haiku/include/lkpi_errno_redefine.h` | from `lkpi_errno_list.h` | — |
 | `IMPORTED.md` | `tools/import-freebsd.sh` | — |

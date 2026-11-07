@@ -30,6 +30,8 @@
 #include <sys/kernel.h>
 
 #include <new>
+#include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 
 extern "C" int lkpi_errno_from_haiku(int haikuError);
@@ -89,24 +91,28 @@ rec_lookup(thread_id id)
 }	// namespace
 
 
-extern "C" struct thread*
-lkpi_curthread(void)
+namespace {
+
+/* The record for Haiku thread 'id', created on first use. */
+struct thread*
+rec_get(thread_id id)
 {
-	thread_id id = find_thread(NULL);
 	lkpi_thread_rec* rec = rec_lookup(id);
 	if (rec != NULL)
 		return &rec->td;
 
-	/* First LinuxKPI use on this thread: allocate outside the lock. */
+	/* Allocate outside the spinlock. */
 	rec = new(std::nothrow) lkpi_thread_rec;
 	if (rec == NULL)
 		panic("LinuxKPI: out of memory allocating struct thread");
 	memset(&rec->td, 0, sizeof(rec->td));
 	rec->td.td_tid = id;
 	rec->td.td_proc = &sProc0;
-	rec->td.td_priority = thread_get_current_thread()->priority;
-	strlcpy(rec->td.td_name, thread_get_current_thread()->name,
-		sizeof(rec->td.td_name));
+	thread_info info;
+	if (get_thread_info(id, &info) == B_OK) {
+		rec->td.td_priority = info.priority;
+		strlcpy(rec->td.td_name, info.name, sizeof(rec->td.td_name));
+	}
 	rec->sqWchan = NULL;
 	rec->sqNext = NULL;
 	rec->sqWoken = false;
@@ -114,10 +120,73 @@ lkpi_curthread(void)
 	rec->sqHeld = NULL;
 
 	InterruptsSpinLocker locker(sThreadHashLock);
+	/* Another CPU may have created it meanwhile. */
+	for (lkpi_thread_rec* other = sThreadHash[id % kThreadHashSize];
+			other != NULL; other = other->hashNext) {
+		if (other->td.td_tid == id) {
+			locker.Unlock();
+			delete rec;
+			return &other->td;
+		}
+	}
 	rec->hashNext = sThreadHash[id % kThreadHashSize];
 	sThreadHash[id % kThreadHashSize] = rec;
 	return &rec->td;
 	/* Records are never freed yet: see docs/STATUS.md, "thread records". */
+}
+
+}	// namespace
+
+
+extern "C" struct thread*
+lkpi_curthread(void)
+{
+	return rec_get(find_thread(NULL));
+}
+
+
+extern "C" int lkpi_errno_from_haiku(int haikuError);
+
+/* kthread_add(9) for LinuxKPI: the new thread is created stopped (Haiku's
+ * spawn_kernel_thread() does that anyway) and *newtdp is its record. */
+extern "C" int
+lkpi_kthread_add(void (*func)(void*), void* arg, void* /* proc */,
+	struct thread** newtdp, int /* flags */, int /* pages */,
+	const char* fmt, ...)
+{
+	char name[B_OS_NAME_LENGTH];
+	va_list ap;
+	va_start(ap, fmt);
+	vsnprintf(name, sizeof(name), fmt, ap);
+	va_end(ap);
+
+	thread_id id = spawn_kernel_thread((thread_func)func, name,
+		B_NORMAL_PRIORITY, arg);
+	if (id < 0)
+		return lkpi_errno_from_haiku(id);
+	if (newtdp != NULL)
+		*newtdp = rec_get(id);
+	return 0;
+}
+
+
+extern "C" void
+lkpi_sched_add(struct thread* td, int /* flags */)
+{
+	resume_thread(td->td_tid);
+}
+
+
+/* FreeBSD priorities: lower is more important; below PRI_MIN_TIMESHARE (120)
+ * are interrupt/realtime classes. Haiku: higher is more important. Map the
+ * "raised" FreeBSD classes LinuxKPI uses (PI_SWI(SWI_NET) for kthreads) to
+ * an urgent but not real-time Haiku priority. */
+extern "C" void
+lkpi_sched_prio(struct thread* td, u_char prio)
+{
+	td->td_priority = prio;
+	set_thread_priority(td->td_tid,
+		prio < 120 ? B_URGENT_DISPLAY_PRIORITY : B_NORMAL_PRIORITY);
 }
 
 
@@ -417,4 +486,65 @@ extern "C" bool
 lkpi_can_sleep(void)
 {
 	return are_interrupts_enabled();
+}
+
+
+// #pragma mark - jiffies
+
+
+/* linux/jiffies.h: "extern unsigned long jiffies;". freebsd_network's hz is
+ * 1000, so one jiffy is one millisecond of system_time(). */
+extern "C" {
+unsigned long jiffies;
+}
+
+namespace {
+
+timer sJiffiesTimer;
+bool sJiffiesTimerActive;
+
+int32
+jiffies_tick(timer*)
+{
+	jiffies = (unsigned long)(system_time() / 1000);
+	return B_HANDLED_INTERRUPT;
+}
+
+}	// namespace
+
+
+extern "C" void
+lkpi_jiffies_init(void)
+{
+	jiffies = (unsigned long)(system_time() / 1000);
+	if (add_timer(&sJiffiesTimer, jiffies_tick, 1000, B_PERIODIC_TIMER)
+			== B_OK)
+		sJiffiesTimerActive = true;
+	else
+		panic("LinuxKPI: cannot start the jiffies timer");
+}
+
+
+extern "C" void
+lkpi_jiffies_uninit(void)
+{
+	if (sJiffiesTimerActive) {
+		cancel_timer(&sJiffiesTimer);
+		sJiffiesTimerActive = false;
+	}
+}
+
+
+/* rtprio(2) for LinuxKPI's sched_set_fifo[_low]() (mt76 worker threads).
+ * Haiku has no real-time FIFO class that is safe for a busy driver thread;
+ * use an urgent normal priority, like lkpi_sched_prio(). (sys/rtprio.h
+ * declares it without extern "C", so it is not included here.) */
+struct rtprio;
+extern "C" int
+rtp_to_pri(struct rtprio* rtp, struct thread* td)
+{
+	if (td == NULL)
+		return EINVAL;
+	set_thread_priority(td->td_tid, B_URGENT_DISPLAY_PRIORITY);
+	return 0;
 }
