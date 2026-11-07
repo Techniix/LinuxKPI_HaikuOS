@@ -156,6 +156,21 @@ keep ethernet plugged in, and know the recovery steps above.
 boot** (the network stack opens `/dev/net`). If it crashes during boot, use
 *Select safe mode options → Disable user add-ons* and remove it (section 4).
 
+**Until stage (c) works, do not leave `dev/net/mt7921e` in place across a
+reboot.** Before commit 'mt7921e: do not hang probe' a failed init made probe wait
+forever, which hung the boot at the rocket icon (fixed: probe now fails after
+the driver's own retries, roughly 30-40 s, but that still delays boot).
+Remove the link before rebooting and load the driver by hand afterwards:
+
+```sh
+D=/boot/system/non-packaged/add-ons/kernel/drivers
+mv $D/dev/net/mt7921e ~/mt7921e.link        # before reboot
+mv ~/mt7921e.link $D/dev/net/mt7921e        # after boot, then ~/rescan mt7921e
+```
+
+`rescan` only loads a driver binary the first time in a session; after
+replacing the binary, reboot (with the link removed) before testing again.
+
 ## c.1 Remove the stage (a)/(b) test driver
 
 Both drivers match the same card; only one can own it.

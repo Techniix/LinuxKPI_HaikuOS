@@ -128,6 +128,7 @@ lic() {
 	echo "| linuxkpi/haiku/lkpi_compat.c | common/src/linux_compat.c (generic part, verbatim) | tools/extract-compat.py |"
 	echo "| linuxkpi/haiku/lkpi_rcu.c | common/src/linux_rcu.c (2 adaptations) | tools/derive.py |"
 	echo "| linuxkpi/haiku/include/net/mac80211.h | common/include/net/mac80211.h (1 adaptation) | tools/derive.py |"
+	echo "| wlan/mt7921e/linux/mt7921/init.c | wlan/mt7921e/imported/mt76/mt7921/init.c (no unbounded wait in probe) | tools/derive.py |"
 	echo
 	echo "## Written for Haiku (MIT unless the file says otherwise)"
 	echo
