@@ -35,6 +35,14 @@
 
 MALLOC_DEFINE(M_LKPI_PAGE, "lkpipage", "LinuxKPI page descriptors");
 
+/*
+ * Offset bits within a page. Not PAGE_MASK: LinuxKPI's linux/page.h (pulled
+ * in via linux/mm.h) redefines PAGE_MASK with Linux's meaning, ~(PAGE_SIZE-1),
+ * the opposite of FreeBSD's. Using it here made every virt_to_page() lookup
+ * miss (panic in page_pool_get_dma_addr on the first RX ring fill).
+ */
+#define LKPI_PAGE_OFFSET_MASK	((vm_paddr_t)PAGE_SIZE - 1)
+
 #define LKPI_PAGE_HASH	4096
 static struct vm_page *lkpi_page_hash[LKPI_PAGE_HASH];
 static struct mtx lkpi_page_lock;
@@ -72,7 +80,7 @@ lkpi_phys_to_vm_page(vm_paddr_t pa)
 {
 	struct vm_page *m;
 
-	pa &= ~(vm_paddr_t)PAGE_MASK;
+	pa &= ~LKPI_PAGE_OFFSET_MASK;
 	mtx_lock(&lkpi_page_lock);
 	for (m = lkpi_page_hash[lkpi_pfn_hash(pa)]; m != NULL; m = m->lkpi_pnext) {
 		if (m->phys_addr == pa)
@@ -88,7 +96,7 @@ lkpi_phys_to_dmap(vm_paddr_t pa)
 	struct vm_page *m = lkpi_phys_to_vm_page(pa);
 
 	/* Only pages we allocated have a known mapping (PMAP_HAS_DMAP is 0). */
-	return (m != NULL ? (char *)m->lkpi_kva + (pa & PAGE_MASK) : NULL);
+	return (m != NULL ? (char *)m->lkpi_kva + (pa & LKPI_PAGE_OFFSET_MASK) : NULL);
 }
 
 /*
@@ -264,7 +272,7 @@ iounmap(void *addr)
 void *
 pmap_mapdev_attr(vm_paddr_t pa, vm_size_t size, vm_memattr_t ma)
 {
-	vm_paddr_t base = pa & ~(vm_paddr_t)PAGE_MASK;
+	vm_paddr_t base = pa & ~LKPI_PAGE_OFFSET_MASK;
 	uint32 mt;
 	void *va;
 	area_id area;

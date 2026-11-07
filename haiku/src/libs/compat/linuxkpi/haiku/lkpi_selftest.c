@@ -12,7 +12,7 @@
  *   4. queue_work() on system_wq runs and completes a completion
  *   5. msleep()/jiffies advance at 1 per ms
  *   6. page_pool hands out pages (mt76 fills its RX rings from it), below
- *      4 GiB for GFP_DMA32
+ *      4 GiB for GFP_DMA32, and virt_to_head_page() finds them again
  *
  * Results go to syslog as "linuxkpi: selftest ...". Runs once per driver
  * load, after all other LinuxKPI SYSINITs; takes about 100 ms.
@@ -126,8 +126,10 @@ lkpi_selftest(void *arg __unused)
 		} else {
 			pg = page_pool_alloc_frag(pp, &off, 2048,
 			    GFP_KERNEL | GFP_DMA32);
+			/* also: address -> struct page (virt_to_head_page()) */
 			printf("linuxkpi: selftest 6 page_pool: %s (phys %#llx)\n",
-			    pg != NULL && page_to_phys(pg) < (1ULL << 32) ?
+			    pg != NULL && page_to_phys(pg) < (1ULL << 32) &&
+			    virt_to_head_page((char *)page_address(pg) + 100) == pg ?
 			    "OK" : "FAIL",
 			    pg != NULL ? (unsigned long long)page_to_phys(pg) : 0ULL);
 			if (pg != NULL)
