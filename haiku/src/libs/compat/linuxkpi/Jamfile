@@ -49,6 +49,7 @@ KernelMergeObject linuxkpi.o :
 	lkpi_page.c
 	lkpi_pci.c
 	lkpi_sema.c
+	lkpi_selftest.c
 
 	# imported FreeBSD support code
 	ck_epoch.c

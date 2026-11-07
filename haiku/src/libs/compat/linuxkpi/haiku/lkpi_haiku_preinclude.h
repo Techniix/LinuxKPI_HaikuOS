@@ -108,6 +108,7 @@ typedef int32_t		__int32_t;
 #include <lkpi_errno.h>	/* positive FreeBSD errno values; see header */
 #include <lkpi_haiku_kern.h>
 #include <lkpi_haiku_wrap.h>	/* Haiku errno -> FreeBSD errno at the boundary */
+#include <lkpi_haiku_printf.h>	/* %j/%t for Haiku's kernel printf */
 
 /* Haiku's <sys/types.h> has 'typedef uint32 umode_t'; LinuxKPI's asm/types.h
  * wants 'unsigned short'. Rename the LinuxKPI one. */

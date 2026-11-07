@@ -224,9 +224,9 @@ lkpi_dma_map_phys(struct device *dev, vm_paddr_t phys, size_t len,
 	b->len = len;
 
 	if (atomic_cmpset_int(&lkpi_dma_bounce_logged, 0, 1))
-		dev_info(dev, "lkpi_dma: bouncing %#jx+%zu above DMA mask %#jx "
-		    "(logged once)\n", (uintmax_t)phys, len,
-		    (uintmax_t)priv->dma_mask);
+		dev_info(dev, "lkpi_dma: bouncing %#llx+%zu above DMA mask %#llx "
+		    "(logged once)\n", (unsigned long long)phys, len,
+		    (unsigned long long)priv->dma_mask);
 
 	if ((attrs & DMA_ATTR_SKIP_CPU_SYNC) == 0 &&
 	    lkpi_dma_to_device(direction))

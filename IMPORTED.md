@@ -637,6 +637,7 @@ lkpi_pci.c is derived from FreeBSD linux_pci.c and keeps its BSD-2-Clause notice
 | linuxkpi/haiku/include/lkpi_errno_redefine.h | MIT |
 | linuxkpi/haiku/include/lkpi_haiku_kern.h | MIT |
 | linuxkpi/haiku/include/lkpi_haiku_kpi.h | MIT |
+| linuxkpi/haiku/include/lkpi_haiku_printf.h | MIT |
 | linuxkpi/haiku/include/lkpi_haiku_wrap.h | MIT |
 | linuxkpi/haiku/include/machine/atomic.h | MIT |
 | linuxkpi/haiku/include/machine/cputypes.h | MIT |
@@ -720,6 +721,8 @@ lkpi_pci.c is derived from FreeBSD linux_pci.c and keeps its BSD-2-Clause notice
 | linuxkpi/haiku/lkpi_newbus.c | MIT |
 | linuxkpi/haiku/lkpi_page.c | MIT |
 | linuxkpi/haiku/lkpi_pci.c | BSD-2-Clause (text) |
+| linuxkpi/haiku/lkpi_printf.c | MIT |
+| linuxkpi/haiku/lkpi_selftest.c | MIT |
 | linuxkpi/haiku/lkpi_sema.c | MIT |
 | linuxkpi/haiku/lkpi_sx.c | MIT |
 | linuxkpi/haiku/lkpi_sysinit.c | MIT |

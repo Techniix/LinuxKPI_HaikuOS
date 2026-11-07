@@ -19,11 +19,17 @@ struct taskqgroup *qgroup_softirq =
 #define LKPI_MAX_GROUPTASKS	LKPI_MAX_CPUS
 static struct grouptask *lkpi_grouptasks[LKPI_MAX_GROUPTASKS];
 
+static volatile u_int lkpi_grouptask_runs;
+
 static void
 lkpi_grouptask_tramp(void *context, int pending)
 {
 	struct grouptask *gt = context;
+	u_int n = atomic_fetchadd_int(&lkpi_grouptask_runs, 1) + 1;
 
+	/* Diagnostics (stage c): tasklets run from here. */
+	if (n <= 8 || (n & 1023) == 0)
+		printf("linuxkpi: grouptask '%s' run #%u\n", gt->gt_name, n);
 	gt->gt_fn(gt->gt_context);
 }
 

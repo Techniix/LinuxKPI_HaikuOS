@@ -34,9 +34,15 @@ HAIKU_FIRMWARE_NAME_MAP({
  * vector is exclusively ours, so claim it and let the Linux handler run in
  * the handler thread.
  */
+static int32 sInterruptCount;
+
 int
 HAIKU_CHECK_DISABLE_INTERRUPTS(device_t dev)
 {
+	/* Stage (c) diagnostics: log the first interrupts, then every 1024th. */
+	int32 n = atomic_add(&sInterruptCount, 1) + 1;
+	if (n <= 8 || (n & 1023) == 0)
+		dprintf("mt7921e: interrupt #%" B_PRId32 "\n", n);
 	return 1;
 }
 
