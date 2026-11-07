@@ -10,7 +10,7 @@ Last updated 2026-11-06. Haiku @ `b9fdc8a9e699`, FreeBSD @ `b556d9c9ce94`.
 | b | `request_firmware` returns the MT7921 blobs | **[V] Passed on hardware 2026-11-06**: both MT7922 blobs loaded (137632 and 1233748 bytes; crc32 `7a55f5fd`, `2144df1c`) |
 | c | DMA API (`linux_dma_*`), import mt76 + mt7921e, probe and MCU boot | **[V] Firmware boots on hardware 2026-11-07** (MT7922: `HW/SW Version: 0x8a108a10`, `WM Firmware Version: ____000000`); attach deadlock on Giant fixed (`c987dfc`) |
 | d | `linuxkpi_wlan` (mac80211 → net80211), scan | **[V] Works on hardware 2026-11-07**: scan finds the AP |
-| e | WPA2 association, DHCP, traffic | **[V] First pass 2026-11-07**: WPA2-PSK/CCMP association (802.11n, HT40), DHCP lease, RX/TX packets. Open: A-MPDU TX session setup fails (`ieee80211_ampdu_request returned 0 != 1`), 1 TX error; Wi-Fi-only traffic test pending |
+| e | WPA2 association, DHCP, traffic | **[V] First pass 2026-11-07**: WPA2-PSK/CCMP association (802.11n, HT40), DHCP lease, RX/TX packets. Open: A-MPDU TX session setup fails (`ieee80211_ampdu_request returned 0 != 1`), 1 TX error. **Wi-Fi-only traffic verified** (Ethernet unplugged: ping to gateway and internet 0% loss, ~9-25 ms; web browsing, including this project's chat session) |
 | f | Suspend/resume, stability, upstreaming | Not started |
 
 ## Verification so far
