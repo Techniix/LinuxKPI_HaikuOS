@@ -24,7 +24,7 @@ Application LinuxKPIManager :
 	App.cpp
 	MainWindow.cpp
 	SettingsWindow.cpp
-	: liblinuxkpi_manage.a libcolumnlistview.a be bnetapi localestub
+	: liblinuxkpi_manage.a libcolumnlistview.a be bnetapi network localestub
 		[ TargetLibstdc++ ] [ TargetLibsupc++ ]
 	: LinuxKPIManager.rdef
 	;

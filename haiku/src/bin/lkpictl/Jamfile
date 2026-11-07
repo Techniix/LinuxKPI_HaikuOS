@@ -12,5 +12,5 @@ SubDirHdrs $(HAIKU_TOP) src apps linuxkpimanager core ;
 
 Application lkpictl :
 	lkpictl.cpp
-	: liblinuxkpi_manage.a be bnetapi [ TargetLibstdc++ ] [ TargetLibsupc++ ]
+	: liblinuxkpi_manage.a be bnetapi network [ TargetLibstdc++ ] [ TargetLibsupc++ ]
 	;
