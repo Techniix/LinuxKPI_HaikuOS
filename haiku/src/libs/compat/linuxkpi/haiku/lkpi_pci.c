@@ -54,6 +54,8 @@
 #include <sys/rman.h>
 #include <sys/module.h>
 #include <sys/linker_set.h>
+#include <sys/lock.h>
+#include <sys/mutex.h>
 #include <machine/resource.h>
 #include <dev/pci/pcivar.h>
 #include <dev/pci/pcireg.h>
@@ -413,6 +415,7 @@ lkpi_pci_bridge_attach(device_t dev)
 	const struct pci_device_id *id;
 	struct pci_driver *pdrv;
 	struct pci_dev *pdev;
+	bool giant;
 	int error;
 
 	pdrv = linux_pci_find(dev, &id);
@@ -423,6 +426,17 @@ lkpi_pci_bridge_attach(device_t dev)
 		return (ENXIO);
 	}
 	pdev = device_get_softc(dev);
+	/*
+	 * freebsd_network holds Giant across the whole attach (driver.c).
+	 * Linux probe routines may wait for work they queued (FreeBSD's mt76
+	 * waits for mt7921_init_work()), and that work ends in LinuxKPI 802.11
+	 * attach, which takes bus_topo_lock() == Giant: a deadlock (stage (c),
+	 * stuck right after the firmware booted). Run the Linux probe without
+	 * Giant; nothing in it touches freebsd_network's device tree directly.
+	 */
+	giant = mtx_owned(&Giant);
+	if (giant)
+		mtx_unlock(&Giant);
 	error = linux_pci_attach_device(dev, pdrv, id, pdev);
 	if (error == 0 && lkpi_pci_attach_wait_hook != NULL) {
 		/* e.g. LinuxKPI 802.11: see lkpi_wlan_haiku.c */
@@ -433,6 +447,8 @@ lkpi_pci_bridge_attach(device_t dev)
 			linux_pci_detach_device(pdev);
 		}
 	}
+	if (giant)
+		mtx_lock(&Giant);
 	return (lkpi_errno_to_haiku(error));
 }
 
@@ -440,8 +456,17 @@ static int
 lkpi_pci_bridge_detach(device_t dev)
 {
 	struct pci_dev *pdev = device_get_softc(dev);
+	bool giant;
+	int error;
 
-	return (lkpi_errno_to_haiku(linux_pci_detach_device(pdev)));
+	/* As attach: Linux remove() may wait for work that takes Giant. */
+	giant = mtx_owned(&Giant);
+	if (giant)
+		mtx_unlock(&Giant);
+	error = linux_pci_detach_device(pdev);
+	if (giant)
+		mtx_lock(&Giant);
+	return (lkpi_errno_to_haiku(error));
 }
 
 static int
