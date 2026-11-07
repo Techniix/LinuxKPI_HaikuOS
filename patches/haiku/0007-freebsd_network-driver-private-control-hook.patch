@@ -1,0 +1,49 @@
+diff --git a/src/libs/compat/freebsd_network/compat/sys/haiku-module.h b/src/libs/compat/freebsd_network/compat/sys/haiku-module.h
+index 3acffb0..d9816e6 100644
+--- a/src/libs/compat/freebsd_network/compat/sys/haiku-module.h
++++ b/src/libs/compat/freebsd_network/compat/sys/haiku-module.h
+@@ -94,6 +94,10 @@ void uninit_wlan_stack(void);
+ status_t start_wlan(device_t);
+ status_t stop_wlan(device_t);
+ status_t wlan_control(void*, uint32, void*, size_t);
++
++typedef status_t (*driver_control_hook)(void* cookie, uint32 op, void* arg,
++	size_t length);
++extern driver_control_hook gDriverControlHook;
+ status_t wlan_close(void*);
+ 
+ /* we define the driver methods with HAIKU_FBSD_DRIVERS_GLUE to
+diff --git a/src/libs/compat/freebsd_network/device_hooks.c b/src/libs/compat/freebsd_network/device_hooks.c
+index 72d62ac..ada6dc3 100644
+--- a/src/libs/compat/freebsd_network/device_hooks.c
++++ b/src/libs/compat/freebsd_network/device_hooks.c
+@@ -24,6 +24,16 @@
+ #include <compat/net/if_media.h>
+ 
+ 
++/*
++ * Driver-private ioctl hook. A driver built on this layer may set it (once,
++ * before devices are published) to answer its own range of opcodes; it
++ * returns B_DEV_INVALID_IOCTL for opcodes it does not own. Requests reach
++ * here from the network stack (socket ioctl with an ifreq naming the
++ * interface) with "arg" still a userland pointer.
++ */
++driver_control_hook gDriverControlHook = NULL;
++
++
+ static status_t
+ compat_open(const char *name, uint32 flags, void **cookie)
+ {
+@@ -375,6 +385,12 @@ compat_control(void *cookie, uint32 op, void *arg, size_t length)
+ 		}
+ 	}
+ 
++	if (gDriverControlHook != NULL) {
++		status_t hookStatus = gDriverControlHook(cookie, op, arg, length);
++		if (hookStatus != B_DEV_INVALID_IOCTL)
++			return hookStatus;
++	}
++
+ 	return wlan_control(cookie, op, arg, length);
+ }
+ 

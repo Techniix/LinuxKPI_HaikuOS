@@ -275,3 +275,88 @@ lkpi_dma: <bounces> bounces, <misses> pool misses, <maps> maps total
 
 `bounces` close to `maps` means nearly every transfer is copied; any `pool
 misses` mean the 512-slot pool ran out and fell back to a slower allocation.
+
+## Speed tests A and B (2026-11-07)
+
+Both use the build from commit `95abd05` (the one with the
+`linuxkpi: tunable` and `pool misses` strings). **Do not rebuild between
+A and B**, so the only difference is the setting.
+
+Your mesh has several radios called "Singleton Fiber"; the driver may join a
+different one after each restart, and results differ a lot between them. So
+note the access point for every test:
+
+```sh
+ifconfig /dev/net/mt7921e/0 | grep Network
+```
+
+Test A (software encryption, default) is done: on `…:e9:3f`, about 19 down
+and 110 up; on `…:e9:3e`, about 617 down and 43 up.
+
+**Test B (card does the encryption):**
+
+1. Create the settings file:
+   ```sh
+   mkdir -p ~/config/settings/kernel/drivers
+   echo "compat.linuxkpi.80211.hw_crypto 1" > ~/config/settings/kernel/drivers/mt7921e
+   cat ~/config/settings/kernel/drivers/mt7921e
+   ```
+2. Restart.
+3. Check that it was applied:
+   ```sh
+   grep "tunable" /var/log/syslog
+   ```
+   Expect `linuxkpi: tunable compat.linuxkpi.80211.hw_crypto = 1`.
+4. Check that Wi-Fi connected (network menu: `mt7921e/0: Connected`) and
+   which access point you are on (`ifconfig` line above).
+   - Not connected: save `grep -E "mt7921|mt76|lkpi|linuxkpi|wlan|key" /var/log/syslog | tail -80 > ~/testB-fail.txt` and go to step 8.
+5. Speed test (Ethernet unplugged), twice. Note both results.
+6. Save the logs:
+   ```sh
+   grep -E "lkpi_dma|tunable" /var/log/syslog | tail -20 > ~/testB.txt
+   grep -iE "ampdu|addba|ba_|aggr" /var/log/syslog | tail -30 > ~/testB-ba.txt
+   ```
+7. Compare with Test A *on the same access point*. If B landed on the other
+   one, restart until it lands on the one you want (or note it and test
+   both).
+8. To undo: `rm ~/config/settings/kernel/drivers/mt7921e` and restart. If it
+   does not start: boot menu → safe mode options → *Disable user add-ons*,
+   then run the `rm` and restart normally.
+
+Send: speed numbers, the `Network` line, `~/testB.txt`, `~/testB-ba.txt`
+(or `~/testB-fail.txt`).
+
+## LinuxKPI Manager and lkpictl (first build; optional)
+
+Do this **after** Test B. It rebuilds the driver with the new read-only
+status interface (patch 0007) and builds the two tools for the first time;
+expect compile errors that we fix together.
+
+```sh
+cd ~/hk/LinuxKPI_HaikuOS && git pull
+tools/install.sh ~/hk/haiku          # also applies patches 0007 and 0008
+cd ~/hk/haiku/generated.x86_64
+R=objects/haiku/x86_64/release
+rm -rf $R/add-ons/kernel/drivers/network/wlan/mt7921e \
+       $R/libs/compat/linuxkpi $R/libs/compat/linuxkpi_wlan \
+       $R/libs/compat/freebsd_network
+jam -q -j12 mt7921e LinuxKPIManager lkpictl 2>&1 | tee ~/manager-build.txt | tail -40
+```
+
+Install the tools and their data (the driver as in section c.3):
+
+```sh
+N=/boot/system/non-packaged
+mkdir -p $N/bin $N/apps $N/data/linuxkpi
+cp $R/apps/linuxkpimanager/LinuxKPIManager $N/apps/
+cp $R/bin/lkpictl/lkpictl $N/bin/
+cp -r ~/hk/LinuxKPI_HaikuOS/data/linuxkpi/* $N/data/linuxkpi/
+lkpictl drivers
+lkpictl hardware
+lkpictl status mt7921e
+```
+
+(If the binaries are not at those paths, `find $R -name lkpictl -type f`.)
+Then start `/boot/system/non-packaged/apps/LinuxKPIManager`. Send
+`~/manager-build.txt` if the build fails, or screenshots of each tab if it
+runs.

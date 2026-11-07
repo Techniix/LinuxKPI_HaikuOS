@@ -42,7 +42,7 @@ SYSINC="-I$H/headers -I$H/headers/config -I$H/headers/os -I$H/headers/os/kernel 
  -I$H/headers/os/drivers -I$H/headers/os/drivers/bus -I$H/headers/os/support \
  -I$H/headers/os/storage -I$H/headers/os/app -I$H/headers/os/net -I$H/headers/posix \
  -I$H/headers/private/kernel -I$H/headers/private/libroot -I$H/headers/private/shared \
- -I$H/headers/private -I$H/headers/private/kernel/arch/x86 -I$H/headers/private/kernel/boot/platform/efi \
+ -I$H/headers/private -I$REPO/haiku/headers/private/linuxkpi -I$H/headers/private/kernel/arch/x86 -I$H/headers/private/kernel/boot/platform/efi \
  -I$H/headers/private/system -I$H/headers/private/system/arch/x86_64 \
  -I$H/headers/private/net -I$H/headers/private/drivers -I$H/build/config_headers \
  -I$SHIM/generated"

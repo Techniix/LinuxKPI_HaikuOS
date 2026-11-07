@@ -31,14 +31,16 @@ done
 # Directories that exist only because of this project (never Haiku's own).
 OWNED="src/libs/compat/linuxkpi src/libs/compat/linuxkpi_wlan
 	src/add-ons/kernel/drivers/network/lkpi_pcitest
-	src/add-ons/kernel/drivers/network/wlan/mt7921e"
+	src/add-ons/kernel/drivers/network/wlan/mt7921e
+	src/apps/linuxkpimanager src/bin/lkpictl
+	headers/private/linuxkpi"
 for d in $OWNED; do
 	[ -d "$REPO/haiku/$d" ] || { echo "install.sh: $d missing in repo" >&2; exit 1; }
 	rm -rf "${H:?}/$d"
 done
 
-(cd "$REPO/haiku" && find src -type f) | while read -r f; do
+(cd "$REPO/haiku" && find src headers -type f) | while read -r f; do
 	mkdir -p "$H/$(dirname "$f")"
 	cp "$REPO/haiku/$f" "$H/$f"
 done
-echo "copied $(cd "$REPO/haiku" && find src -type f | wc -l) files into $H"
+echo "copied $(cd "$REPO/haiku" && find src headers -type f | wc -l) files into $H"

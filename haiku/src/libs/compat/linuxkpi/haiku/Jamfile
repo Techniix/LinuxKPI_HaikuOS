@@ -15,11 +15,13 @@ UseHeaders [ FDirName $(HAIKU_TOP) src libs compat freebsd_network compat ]
 UseHeaders [ FDirName $(HAIKU_TOP) src libs compat freebsd_network ] : true ;
 UsePrivateHeaders net system ;
 UsePrivateKernelHeaders ;
+UsePrivateHeaders linuxkpi ;	# lkpi_control.h (shared with userland)
 
 SubDirCcFlags [ FDefines _KERNEL=1 _XOPEN_SOURCE ] -Wno-unused ;
 SubDirC++Flags [ FDefines _KERNEL=1 ] ;
 
 KernelMergeObject linuxkpi_haiku.o :
+	lkpi_control.c
 	lkpi_errno.c
 	lkpi_printf.c
 	lkpi_haiku_pci.c

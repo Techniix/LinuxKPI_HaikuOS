@@ -92,6 +92,8 @@ Kept in `patches/haiku/` against `BASE_COMMIT`:
 | 0004 | **upstream bug:** compat `atomic_set_*` must be OR (atomic(9)), not store |
 | 0005 | build hook for `mt7921e` |
 | 0006 | net80211 `ieee80211_ampdu_request()` returns 1 on success, as in FreeBSD (LinuxKPI 802.11 relies on it; Haiku's only other caller ignores the value) |
+| 0007 | freebsd_network: `gDriverControlHook`, a driver-private ioctl hook in `compat_control()` before `wlan_control()` (LinuxKPI's read-only status interface, docs/MANAGER.md) |
+| 0008 | build hooks for LinuxKPI Manager (`src/apps/linuxkpimanager`) and `lkpictl` (`src/bin/lkpictl`) |
 
 ## Generated files
 
@@ -102,3 +104,11 @@ Kept in `patches/haiku/` against `BASE_COMMIT`:
 | `haiku/include/net/mac80211.h` | `tools/derive.py` | `common/include/net/mac80211.h` (`_k` key back-pointer on Haiku) |
 | `haiku/include/lkpi_errno_redefine.h` | from `lkpi_errno_list.h` | — |
 | `IMPORTED.md` | `tools/import-freebsd.sh` | — |
+
+## Management tools
+
+LinuxKPI Manager (GUI) and `lkpictl` (CLI) sit entirely in userland on top of
+`liblinuxkpi_manage.a`. The kernel side is a read-only status interface
+(`lkpi_control.c`, ABI in `headers/private/linuxkpi/lkpi_control.h`) reached
+through a socket ioctl, plus tunables read from the driver settings file when
+the driver loads. Design, feasibility and roadmap: [MANAGER.md](MANAGER.md).

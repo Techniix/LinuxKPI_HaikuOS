@@ -751,3 +751,13 @@ lkpi_dmam_pool_destroy(struct device *dev, void *p)
 	pp = p;
 	linux_dma_pool_destroy(*pp);
 }
+
+/* For the read-only status interface (lkpi_control.c). */
+void
+lkpi_dma_get_stats(unsigned int *maps, unsigned int *bounces,
+    unsigned int *pool_misses)
+{
+	*maps = lkpi_dma_maps;
+	*bounces = lkpi_dma_bounces;
+	*pool_misses = lkpi_dma_pool_misses;
+}

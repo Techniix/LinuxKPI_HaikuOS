@@ -62,3 +62,11 @@ Original code is MIT (see `LICENSE`). Imported FreeBSD code keeps its own
 licenses (mostly BSD-2-Clause; ConcurrencyKit is BSD-2-Clause); every file is
 listed with its detected license in `IMPORTED.md`. Upstream files that carry
 no license text are flagged there for review.
+
+## Management tools
+
+`LinuxKPI Manager` (native Haiku app) and `lkpictl` (command line) show
+which LinuxKPI drivers and supported hardware you have, whether they work,
+explain known errors, edit driver settings safely and export a diagnostic
+report. See [docs/MANAGER.md](docs/MANAGER.md). First version; not yet built
+on Haiku.

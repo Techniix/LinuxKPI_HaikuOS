@@ -12,6 +12,8 @@ Last updated 2026-11-06. Haiku @ `b9fdc8a9e699`, FreeBSD @ `b556d9c9ce94`.
 | d | `linuxkpi_wlan` (mac80211 → net80211), scan | **[V] Works on hardware 2026-11-07**: scan finds the AP |
 | e | WPA2 association, DHCP, traffic | **[V] First pass 2026-11-07**: WPA2-PSK/CCMP association (802.11n, HT40), DHCP lease, RX/TX packets. Open: A-MPDU TX session setup fails (`ieee80211_ampdu_request returned 0 != 1`), 1 TX error. **Wi-Fi-only traffic verified** (Ethernet unplugged: ping to gateway and internet 0% loss, ~9-25 ms; web browsing, including this project's chat session) |
 | f | Suspend/resume, stability, upstreaming | Not started |
+| speed | Throughput tuning | 2026-11-07 [V]: A-MPDU TX setup fixed (patch 0006). Results depend on which mesh radio is joined: `…:e9:3e` ~617 down / ~43 up Mbps, `…:e9:3f` ~19 down / ~110 up (consistent over 3 runs). Ping 2 ms to gateway, 20 ms to 1.1.1.1. DMA bounces only ~6.5% of maps, 0 pool misses, so the copy is not the bottleneck. Next: Test B (`compat.linuxkpi.80211.hw_crypto 1`): with software crypto, LinuxKPI clears net80211's RX A-MPDU flag (`linux_80211.c:4533`) [H: cause of the per-band asymmetry] |
+| mgmt | LinuxKPI Manager, `lkpictl`, read-only kernel status interface | Written 2026-11-07; kernel side links (`link-check.sh`), userland passes a syntax check against Haiku headers; **not yet built or run on Haiku** (docs/MANAGER.md) |
 
 ## Verification so far
 
@@ -47,18 +49,16 @@ New kernel imports beyond freebsd_network's: `call_all_cpus_sync`,
 - `malloc_usable_size` returns 0.
 - Memory attributes (write-combining, uncached) are not applied to page allocations.
 - One Haiku area per page allocation — fine for a NIC, wasteful at scale.
-- DMA API not implemented (stage c).
 - Tasklets are not bound to CPUs.
 - Shared INTx is unsafe; MSI only.
 - `pci_find_*` lookups return NULL.
 - `sx` shared mode is exclusive.
-- `sysctl` is a no-op.
+- `sysctl` has no tree; `CTLFLAG_TUN` values are read from the driver settings file at load (`~/config/settings/kernel/drivers/<driver>`), not changeable while running.
 - The test driver declines the device after its self-test (see ARCHITECTURE/RESEARCH addendum, item 3), so no network interface appears in stage (a).
 - 44 imported upstream files carry no license header; flagged in `IMPORTED.md`.
-- DMA (stage c): a streaming mapping above the device's DMA mask is bounced
-  through a fresh `contigmalloc()` per mapping (correct, but slow per packet;
-  a bounce pool is future work). Page allocations prefer memory below 4 GiB
-  to make that rare.
+- DMA: a streaming mapping above the device's DMA mask is copied through a
+  512-slot bounce pool (larger ones get their own `contigmalloc()`). Page
+  allocations prefer memory below 4 GiB to make bouncing rare.
 - LinuxKPI 802.11's suspend/resume helper (`linuxkpi_80211_pm.c`) is not
   built: it needs newbus identify methods Haiku's compat layer lacks.
 - `sched_set_fifo*()` / raised kthread priorities map to Haiku

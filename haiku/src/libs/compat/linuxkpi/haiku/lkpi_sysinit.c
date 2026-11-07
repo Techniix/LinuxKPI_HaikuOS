@@ -17,6 +17,8 @@
 void lkpi_dpcpu_init(void);	/* lkpi_misc.c */
 void lkpi_jiffies_init(void);	/* lkpi_thread.cpp */
 void lkpi_jiffies_uninit(void);
+void lkpi_control_init(void);	/* lkpi_control.c */
+void lkpi_control_uninit(void);
 
 #include <sys/sysctl.h>
 
@@ -158,6 +160,7 @@ lkpi_sysinit_run(void *arg)
 	lkpi_dpcpu_init();	/* before any SYSINIT touches DPCPU data */
 	lkpi_jiffies_init();
 	lkpi_tunables_fetch();	/* FreeBSD: tunables before SI_SUB_TUNABLES */
+	lkpi_control_init();	/* before devices are published */
 	n = lkpi_sysinit_collect(SET_BEGIN(__lkpi_sysinit),
 	    SET_LIMIT(__lkpi_sysinit), list);
 	for (i = 0; i < n; i++) {
@@ -174,6 +177,7 @@ lkpi_sysuninit_run(void *arg)
 	int i, n;
 
 	/* FreeBSD runs SYSUNINITs in reverse (subsystem, order). */
+	lkpi_control_uninit();
 	n = lkpi_sysinit_collect(SET_BEGIN(__lkpi_sysuninit),
 	    SET_LIMIT(__lkpi_sysuninit), list);
 	for (i = n - 1; i >= 0; i--) {
