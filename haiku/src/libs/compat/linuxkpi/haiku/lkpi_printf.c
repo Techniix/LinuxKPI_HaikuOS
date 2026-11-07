@@ -13,6 +13,10 @@
  * ~40 places. On x86_64 intmax_t is long long and ptrdiff_t is long, so
  * rewrite j -> ll and t -> l before formatting. [V]
  *
+ * FreeBSD's "%b" (value, then a bit-name string) is unknown too and would
+ * shift later arguments the same way; it becomes "%x%.0s": the value in
+ * hex, and the bit-name string consumed without being printed.
+ *
  * Built without the LinuxKPI preinclude (calls Haiku/compat functions).
  */
 #include <sys/param.h>
@@ -37,7 +41,7 @@ lkpi_fmt_fix(const char *fmt, char *buf, size_t size)
 		s++;
 		while (*s != '\0' && strchr("-+ #0123456789.*", *s) != NULL)
 			s++;
-		if (*s == 'j' || *s == 't') {
+		if (*s == 'j' || *s == 't' || *s == 'b') {
 			fix = true;
 			break;
 		}
@@ -47,13 +51,13 @@ lkpi_fmt_fix(const char *fmt, char *buf, size_t size)
 	if (!fix)
 		return (fmt);
 
-	for (s = fmt; *s != '\0' && o + 3 < size; s++) {
+	for (s = fmt; *s != '\0' && o + 8 < size; s++) {
 		buf[o++] = *s;
 		if (*s != '%')
 			continue;
 		s++;
 		while (*s != '\0' && strchr("-+ #0123456789.*", *s) != NULL &&
-		    o + 3 < size)
+		    o + 8 < size)
 			buf[o++] = *s++;
 		if (*s == '\0')
 			break;
@@ -62,7 +66,11 @@ lkpi_fmt_fix(const char *fmt, char *buf, size_t size)
 			buf[o++] = 'l';
 		} else if (*s == 't')
 			buf[o++] = 'l';
-		else
+		else if (*s == 'b') {
+			/* no '#': it would land after a width ("%5#x") */
+			memcpy(buf + o, "x%.0s", 5);
+			o += 5;
+		} else
 			buf[o++] = *s;
 	}
 	buf[o] = '\0';

@@ -378,3 +378,22 @@ lkpictl status mt7921e | grep threads
 it started, and `records_freed` should rise. The syslog also shows
 `linuxkpi: N thread records created, L live, F freed` every 256 records.
 If you see `cannot watch thread exits`, the fix is not active.
+
+### Speed diagnosis with lkpictl (same build)
+
+`lkpictl status mt7921e` shows the band, channel, width and mode the card
+is using, which access point (`wlan.bssid`), the block-ack sessions in each
+direction, and net80211's counters of dropped frames by reason. Take it
+before and after a speed test and compare:
+
+```sh
+lkpictl status mt7921e > ~/status-before.txt
+# run the speed test
+lkpictl status mt7921e > ~/status-after.txt
+diff ~/status-before.txt ~/status-after.txt
+```
+
+Counters that grow during a slow download name the cause: `wlan.rx_dup`
+(frames thrown away as duplicates), `wlan.rx_ccmpreplay` (replay check),
+`wlan.rx_decryptcrc`/`rx_ccmpmic` (decryption), `wlan.amsdu_*`
+(A-MSDU unpacking), `wlan.ampdu_rx_*` (reordering), `wlan.ierrors`.

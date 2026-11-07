@@ -123,6 +123,7 @@ What a running driver reports today:
 |---|---|
 | INFO | `abi`, `interface`, `driver`, `linuxkpi.version`, `linuxkpi.freebsd_import`, `linuxkpi.hz`, `loaded_for_ms` |
 | STATS | `jiffies`, `dma.maps`, `dma.bounces`, `dma.bounce_pool_misses`, `threads.records_live`, `threads.records_created`, `threads.records_freed` |
+| STATS (802.11 drivers) | `wlan.device`, `wlan.vap`, `wlan.state`, `wlan.channel`, `wlan.freq_mhz`, `wlan.band`, `wlan.width_mhz`, `wlan.channel_mode`, `wlan.bssid`, `wlan.node_flags`, `wlan.node_chw`, `wlan.rssi_half_db`, `wlan.rx_ba.tidN`, `wlan.tx_ba.tidN`, `wlan.ierrors`, `wlan.oerrors`, and net80211 drop counters `wlan.rx_*`, `wlan.amsdu_*`, `wlan.ampdu_*`, `wlan.addba_reject`, `wlan.tx_*` (from `lkpi_wlan_haiku.c` through `lkpi_control_kern.h`) |
 | TUNABLES | each tunable's dotted key with its current value, and `<key>.flags` (`r`, `w`, `t`) |
 
 Each LinuxKPI driver links its own copy of LinuxKPI (`LINUXKPI_LIBS` are

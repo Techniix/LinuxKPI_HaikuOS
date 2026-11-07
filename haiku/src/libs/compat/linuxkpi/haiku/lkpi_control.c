@@ -31,6 +31,7 @@
 #include <lkpi_control.h>		/* headers/private/linuxkpi */
 
 #include "lkpi_version.h"
+#include "lkpi_control_kern.h"
 
 extern unsigned long jiffies;			/* lkpi_thread.cpp */
 void lkpi_dma_get_stats(uint64_t *maps, uint64_t *bounces,
@@ -48,16 +49,45 @@ struct lkpi_reply {
 	size_t	len;	/* bytes that would have been written */
 };
 
+/* Extra STATS keys from a subsystem (e.g. LinuxKPI 802.11). */
+static lkpi_control_stats_fn lkpi_control_stats_provider;
+
+void
+lkpi_control_set_stats_provider(lkpi_control_stats_fn fn)
+{
+	lkpi_control_stats_provider = fn;
+}
+
+static void reply_vadd(struct lkpi_reply *r, const char *key,
+    const char *fmt, va_list ap);
+
+void
+lkpi_control_add(struct lkpi_reply *r, const char *key, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	reply_vadd(r, key, fmt, ap);
+	va_end(ap);
+}
+
 static void
 reply_add(struct lkpi_reply *r, const char *key, const char *fmt, ...)
 {
-	char value[256];
 	va_list ap;
-	int n;
 
 	va_start(ap, fmt);
-	vsnprintf(value, sizeof(value), fmt, ap);
+	reply_vadd(r, key, fmt, ap);
 	va_end(ap);
+}
+
+static void
+reply_vadd(struct lkpi_reply *r, const char *key, const char *fmt, va_list ap)
+{
+	char value[256];
+	int n;
+
+	vsnprintf(value, sizeof(value), fmt, ap);
 	/* keys and values are single-line by construction; enforce it */
 	for (char *p = value; *p != '\0'; p++)
 		if (*p == '\n' || *p == '\r')
@@ -111,6 +141,8 @@ build_stats(struct lkpi_reply *r)
 	reply_add(r, "threads.records_live", "%d", (int)live);
 	reply_add(r, "threads.records_created", "%d", (int)created);
 	reply_add(r, "threads.records_freed", "%d", (int)freed);
+	if (lkpi_control_stats_provider != NULL)
+		lkpi_control_stats_provider(r);
 }
 
 static void
