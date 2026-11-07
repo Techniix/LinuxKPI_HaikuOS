@@ -55,10 +55,18 @@ SettingsStore::Read(const Driver& driver, BStringList& keys,
 	if (handle == NULL)
 		return B_ENTRY_NOT_FOUND;
 	const driver_settings* settings = get_driver_settings(handle);
+	// The kernel's get_driver_parameter() uses the LAST occurrence of a
+	// key (driver_settings.cpp searches backwards), so later lines win here.
 	for (int i = 0; settings != NULL && i < settings->parameter_count; i++) {
 		const driver_parameter& p = settings->parameters[i];
+		BString value(p.value_count > 0 ? p.values[0] : "");
+		int32 index = keys.IndexOf(p.name);
+		if (index >= 0) {
+			values.Replace(index, value);
+			continue;
+		}
 		keys.Add(p.name);
-		values.Add(p.value_count > 0 ? p.values[0] : "");
+		values.Add(value);
 	}
 	unload_driver_settings(handle);
 	return B_OK;
@@ -155,13 +163,14 @@ SettingsStore::Set(const Driver& driver, const char* key, const char* value,
 		return status;
 	}
 
+	// One line per key: drop every earlier occurrence (the kernel would use
+	// the last one), then add ours.
 	BString line;
 	line << key << " " << value;
-	int32 index = find_key_line(lines, key);
-	if (index >= 0)
-		lines.Replace(index, line);
-	else
-		lines.Add(line);
+	int32 index;
+	while ((index = find_key_line(lines, key)) >= 0)
+		lines.Remove(index);
+	lines.Add(line);
 
 	status = write_lines(path.String(), lines);
 	if (status != B_OK)
@@ -174,6 +183,17 @@ SettingsStore::Set(const Driver& driver, const char* key, const char* value,
 status_t
 SettingsStore::Unset(const Driver& driver, const char* key, BString& error)
 {
+	const TunableSpec* spec = driver.FindTunable(key);
+	if (spec == NULL) {
+		error.SetToFormat("%s is not a setting of %s.", key,
+			driver.name.String());
+		return B_BAD_VALUE;
+	}
+	if (spec->risk == kRiskUnsafe) {
+		error = "This setting cannot be changed from here.";
+		return B_NOT_ALLOWED;
+	}
+
 	BString path;
 	status_t status = PathFor(driver, path);
 	if (status != B_OK)

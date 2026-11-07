@@ -18,12 +18,16 @@ void lkpi_dpcpu_init(void);	/* lkpi_misc.c */
 void lkpi_jiffies_init(void);	/* lkpi_thread.cpp */
 void lkpi_jiffies_uninit(void);
 void lkpi_control_init(void);	/* lkpi_control.c */
+void lkpi_thread_reaper_init(void);	/* lkpi_thread.cpp */
+void lkpi_thread_reaper_uninit(void);
 void lkpi_control_uninit(void);
 
 #include <sys/sysctl.h>
 
 #include <KernelExport.h>
 #include <driver_settings.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -44,19 +48,20 @@ SET_DECLARE(__lkpi_sysuninit, struct lkpi_sysinit);
 /*
  * Tunables (see include/sys/sysctl.h). FreeBSD name from the SYSCTL parent
  * token: "_compat_linuxkpi_80211" + "hw_crypto" -> "compat.linuxkpi.80211.
- * hw_crypto". Node names containing '_' cannot be told apart from the
- * separators; none of the LinuxKPI tunables have one.
+ * hw_crypto".
  */
-static struct lkpi_tunable lkpi_tunable_dummy = { "", "", NULL, 0, 0, 0 };
+static struct lkpi_tunable lkpi_tunable_dummy = { "", "", NULL, 0, 0, 0, 0 };
 DATA_SET(__lkpi_tunable, lkpi_tunable_dummy);
 SET_DECLARE(__lkpi_tunable, struct lkpi_tunable);
 
-static void
+void
 lkpi_tunable_key(const struct lkpi_tunable *t, char *buf, size_t len)
 {
 	const char *p = t->parent;
 	size_t i = 0;
 
+	if (len == 0)
+		return;
 	if (*p == '_')
 		p++;
 	for (; *p != '\0' && i + 1 < len; p++)
@@ -65,6 +70,63 @@ lkpi_tunable_key(const struct lkpi_tunable *t, char *buf, size_t len)
 		buf[i++] = '.';
 	buf[i] = '\0';
 	strlcat(buf, t->name, len);
+}
+
+/* Parses "value" for tunable "t" into *out; false if it does not fit. */
+static bool
+lkpi_tunable_parse(const struct lkpi_tunable *t, const char *v, uint64_t *out)
+{
+	char *end;
+
+	if (strcmp(v, "true") == 0 || strcmp(v, "yes") == 0 ||
+	    strcmp(v, "on") == 0) {
+		*out = 1;
+		return (true);
+	}
+	if (strcmp(v, "false") == 0 || strcmp(v, "no") == 0 ||
+	    strcmp(v, "off") == 0) {
+		*out = 0;
+		return (true);
+	}
+	if (t->is_bool) {
+		/* a C bool may only hold 0 or 1 */
+		if (strcmp(v, "0") == 0 || strcmp(v, "1") == 0) {
+			*out = v[0] - '0';
+			return (true);
+		}
+		return (false);
+	}
+	if (t->size == 0 || t->size > 8)
+		return (false);
+	if (t->is_signed) {
+		long long n, lo, hi;
+
+		errno = 0;
+		n = strtoll(v, &end, 0);
+		if (end == v || *end != '\0' || errno != 0)
+			return (false);
+		hi = t->size == 8 ? LLONG_MAX
+		    : (long long)((1ULL << (t->size * 8 - 1)) - 1);
+		lo = -hi - 1;
+		if (n < lo || n > hi)
+			return (false);
+		*out = (uint64_t)n;
+	} else {
+		unsigned long long n, hi;
+
+		if (*v == '-')
+			return (false);
+		errno = 0;
+		n = strtoull(v, &end, 0);
+		if (end == v || *end != '\0' || errno != 0)
+			return (false);
+		hi = t->size == 8 ? ULLONG_MAX
+		    : (1ULL << (t->size * 8)) - 1;
+		if (n > hi)
+			return (false);
+		*out = n;
+	}
+	return (true);
 }
 
 static void
@@ -81,37 +143,30 @@ lkpi_tunables_fetch(void)
 	    tp++) {
 		struct lkpi_tunable *t = *tp;
 		const char *v;
-		long n;
-		char *end;
+		uint64_t n;
 
-		if (t->ptr == NULL || (t->access & CTLFLAG_TUN) == 0)
+		if (t->ptr == NULL || (t->access & CTLFLAG_TUN) == 0 ||
+		    (t->access & CTLFLAG_NOFETCH) != 0)
 			continue;
 		lkpi_tunable_key(t, key, sizeof(key));
 		v = get_driver_parameter(handle, key, NULL, NULL);
 		if (v == NULL)
 			continue;
-		if (strcmp(v, "true") == 0 || strcmp(v, "yes") == 0 ||
-		    strcmp(v, "on") == 0)
-			n = 1;
-		else if (strcmp(v, "false") == 0 || strcmp(v, "no") == 0 ||
-		    strcmp(v, "off") == 0)
-			n = 0;
-		else {
-			n = strtol(v, &end, 0);
-			if (end == v || *end != '\0') {
-				dprintf("linuxkpi: tunable %s: bad value \"%s\"\n",
-				    key, v);
-				continue;
-			}
+		if (!lkpi_tunable_parse(t, v, &n)) {
+			dprintf("linuxkpi: tunable %s: value \"%s\" not accepted "
+			    "(%s); keeping the default\n", key, v, t->is_bool ?
+			    "expected 0/1, on/off, true/false, yes/no" :
+			    "not a number in range");
+			continue;
 		}
 		switch (t->size) {
 		case 1: *(uint8_t *)t->ptr = (uint8_t)n; break;
 		case 2: *(uint16_t *)t->ptr = (uint16_t)n; break;
 		case 4: *(uint32_t *)t->ptr = (uint32_t)n; break;
-		case 8: *(uint64_t *)t->ptr = (uint64_t)n; break;
+		case 8: *(uint64_t *)t->ptr = n; break;
 		default: continue;
 		}
-		dprintf("linuxkpi: tunable %s = %ld\n", key, n);
+		dprintf("linuxkpi: tunable %s = %s\n", key, v);
 	}
 	unload_driver_settings(handle);
 }
@@ -159,6 +214,7 @@ lkpi_sysinit_run(void *arg)
 	lkpi_sleepq_init();
 	lkpi_dpcpu_init();	/* before any SYSINIT touches DPCPU data */
 	lkpi_jiffies_init();
+	lkpi_thread_reaper_init();
 	lkpi_tunables_fetch();	/* FreeBSD: tunables before SI_SUB_TUNABLES */
 	lkpi_control_init();	/* before devices are published */
 	n = lkpi_sysinit_collect(SET_BEGIN(__lkpi_sysinit),
@@ -185,6 +241,7 @@ lkpi_sysuninit_run(void *arg)
 		list[i]->func((void *)list[i]->arg);
 	}
 	lkpi_jiffies_uninit();
+	lkpi_thread_reaper_uninit();	/* last: SYSUNINITs may still use threads */
 }
 
 /* The single entry in Haiku's own set (struct sysinit from freebsd_network's

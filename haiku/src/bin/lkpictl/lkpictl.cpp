@@ -146,7 +146,9 @@ cmd_log(DriverCatalog& catalog, bool all, const char* driver, bool diagnose)
 	int shown = 0;
 	for (int32 i = 0; i < logs.CountLines(); i++) {
 		const LogLine* line = logs.LineAt(i);
-		if (driver != NULL && line->driver != driver)
+		// untagged lines ("linuxkpi: ...") belong to every driver
+		if (driver != NULL && !line->driver.IsEmpty()
+			&& line->driver != driver)
 			continue;
 		if (!diagnose) {
 			printf("%s\n", line->text.String());

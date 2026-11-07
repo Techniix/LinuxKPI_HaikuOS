@@ -21,8 +21,11 @@
 #include <condition_variable.h>
 #include <interrupts.h>
 #include <smp.h>
+#include <Notifications.h>
 #include <thread.h>
+#include <thread_types.h>
 #include <util/AutoLock.h>
+#include <util/KMessage.h>
 
 #include <sys/param.h>
 #include <sys/proc.h>
@@ -35,6 +38,8 @@
 #include <string.h>
 
 extern "C" int lkpi_errno_from_haiku(int haikuError);
+/* LinuxKPI side (lkpi_misc.c): FreeBSD's linuxkpi_thread_dtor(). */
+extern "C" void lkpi_thread_release_task(struct thread* td);
 
 namespace {
 
@@ -60,6 +65,10 @@ struct lkpi_thread_rec {
 	/* the chain lock this thread holds via sleepq_lock() */
 	sleepq_chain*		sqHeld;
 	cpu_status		sqIrqState;
+
+	/* reaper (thread has exited): unlinked from the hash, freed later */
+	lkpi_thread_rec*	deadNext;
+	bigtime_t		deadSince;
 };
 
 const int kThreadHashSize = 256;
@@ -67,6 +76,19 @@ const int kChainCount = 128;
 
 spinlock sThreadHashLock = B_SPINLOCK_INITIALIZER;
 lkpi_thread_rec* sThreadHash[kThreadHashSize];
+
+/*
+ * Records of exited threads (protected by sThreadHashLock). They are freed
+ * only kRecordGrace after the thread exited: lock-free iterators
+ * (FOREACH_THREAD_IN_PROC, lkpi_thread_first/next) may still be standing on
+ * a record that was just unlinked, and they only ever hold one for a few
+ * instructions. A dead record keeps its hashNext so such an iterator goes on.
+ */
+const bigtime_t kRecordGrace = 30000000LL;	/* 30 s */
+lkpi_thread_rec* sDeadRecords;
+int32 sRecordsLive;
+int32 sRecordsCreated;
+int32 sRecordsFreed;
 sleepq_chain sChains[kChainCount];
 struct proc sProc0 = { 0, "kernel" };
 
@@ -118,6 +140,8 @@ rec_get(thread_id id)
 	rec->sqWoken = false;
 	rec->sqTimeout = 0;
 	rec->sqHeld = NULL;
+	rec->deadNext = NULL;
+	rec->deadSince = 0;
 
 	InterruptsSpinLocker locker(sThreadHashLock);
 	/* Another CPU may have created it meanwhile. */
@@ -130,12 +154,157 @@ rec_get(thread_id id)
 		}
 	}
 	rec->hashNext = sThreadHash[id % kThreadHashSize];
-	sThreadHash[id % kThreadHashSize] = rec;
+	__atomic_store_n(&sThreadHash[id % kThreadHashSize], rec,
+		__ATOMIC_RELEASE);
+	sRecordsLive++;
+	int32 created = ++sRecordsCreated;
+	locker.Unlock();
+
+	if ((created & 0xff) == 0) {
+		dprintf("linuxkpi: %" B_PRId32 " thread records created, %" B_PRId32
+			" live, %" B_PRId32 " freed\n", created, sRecordsLive,
+			sRecordsFreed);
+	}
 	return &rec->td;
-	/* Records are never freed yet: see docs/STATUS.md, "thread records". */
+	/* Freed by the reaper below when the Haiku thread exits. */
 }
 
 }	// namespace
+
+
+// #pragma mark - reaper
+
+
+/*
+ * FreeBSD frees a thread's LinuxKPI state from the thread_dtor event
+ * (linuxkpi_thread_dtor() in linux_current.c). Haiku has no such event for
+ * drivers, but its kernel "threads" notification service reports
+ * THREAD_REMOVED from thread_exit(), in the exiting thread's own context
+ * (src/system/kernel/thread.cpp). Without this, every thread that ever
+ * touched LinuxKPI (for example through kfree(), which reads curthread) left
+ * a record and a Linux task_struct behind for good.
+ */
+namespace {
+
+void
+reap_thread(thread_id id)
+{
+	lkpi_thread_rec* rec = rec_lookup(id);
+	if (rec != NULL) {
+		/* Linux 'current' first: it may still use the record. */
+		lkpi_thread_release_task(&rec->td);
+	}
+
+	lkpi_thread_rec* expired = NULL;
+	bigtime_t now = system_time();
+	{
+		InterruptsSpinLocker locker(sThreadHashLock);
+		if (rec != NULL) {
+			lkpi_thread_rec** pp = &sThreadHash[id % kThreadHashSize];
+			for (; *pp != NULL; pp = &(*pp)->hashNext) {
+				if (*pp == rec) {
+					/* rec->hashNext stays valid for iterators on rec */
+					__atomic_store_n(pp, rec->hashNext, __ATOMIC_RELEASE);
+					rec->deadSince = now;
+					rec->deadNext = sDeadRecords;
+					sDeadRecords = rec;
+					sRecordsLive--;
+					break;
+				}
+			}
+		}
+
+		/* detach records that died more than kRecordGrace ago */
+		lkpi_thread_rec** pp = &sDeadRecords;
+		while (*pp != NULL) {
+			lkpi_thread_rec* dead = *pp;
+			if (now - dead->deadSince >= kRecordGrace) {
+				*pp = dead->deadNext;
+				dead->deadNext = expired;
+				expired = dead;
+			} else
+				pp = &dead->deadNext;
+		}
+	}
+
+	while (expired != NULL) {
+		lkpi_thread_rec* next = expired->deadNext;
+		delete expired;
+		atomic_add(&sRecordsFreed, 1);
+		expired = next;
+	}
+}
+
+
+class ThreadReaper : public NotificationListener {
+public:
+	virtual void EventOccurred(NotificationService& /*service*/,
+		const KMessage* event)
+	{
+		int32 code;
+		if (event->FindInt32("event", &code) != B_OK
+			|| code != THREAD_REMOVED)
+			return;
+		/* Use the Thread pointer: ThreadNotificationService::Notify(code,
+		 * Thread*) passes team and thread IDs in swapped order. */
+		Thread* thread;
+		if (event->FindPointer("threadStruct", (void**)&thread) != B_OK
+			|| thread == NULL)
+			return;
+		reap_thread(thread->id);
+	}
+};
+
+ThreadReaper sReaper;
+bool sReaperListening;
+
+}	// namespace
+
+
+extern "C" void
+lkpi_thread_reaper_init(void)
+{
+	new(&sReaper) ThreadReaper;
+	status_t status = NotificationManager::Manager().AddListener("threads",
+		THREAD_REMOVED, sReaper);
+	sReaperListening = status == B_OK;
+	if (!sReaperListening) {
+		dprintf("linuxkpi: cannot watch thread exits (%s); thread records "
+			"will not be freed\n", strerror(status));
+	}
+}
+
+
+extern "C" void
+lkpi_thread_reaper_uninit(void)
+{
+	if (sReaperListening) {
+		/* Waits for a notification in progress (service lock). */
+		NotificationManager::Manager().RemoveListener("threads", NULL,
+			sReaper);
+		sReaperListening = false;
+	}
+	/* The driver is going away: nothing iterates any more. */
+	InterruptsSpinLocker locker(sThreadHashLock);
+	lkpi_thread_rec* dead = sDeadRecords;
+	sDeadRecords = NULL;
+	locker.Unlock();
+	while (dead != NULL) {
+		lkpi_thread_rec* next = dead->deadNext;
+		delete dead;
+		atomic_add(&sRecordsFreed, 1);
+		dead = next;
+	}
+}
+
+
+extern "C" void
+lkpi_thread_get_stats(int32* live, int32* created, int32* freed)
+{
+	*live = sRecordsLive;
+	*created = sRecordsCreated;
+	*freed = sRecordsFreed;
+}
 
 
 extern "C" struct thread*
@@ -430,8 +599,10 @@ lkpi_proc0(void)
 }
 
 
-/* Iteration is lock-free: records are only ever prepended to a hash chain
- * (next pointer written before publication) and never freed. */
+/* Iteration is lock-free: records are prepended to a hash chain (next
+ * pointer written before publication); an exited thread's record is
+ * unlinked but keeps its next pointer and is freed only kRecordGrace later
+ * (reaper above). */
 static struct thread*
 first_from_bucket(int bucket)
 {

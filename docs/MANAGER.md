@@ -122,7 +122,7 @@ What a running driver reports today:
 | Op | Keys |
 |---|---|
 | INFO | `abi`, `interface`, `driver`, `linuxkpi.version`, `linuxkpi.freebsd_import`, `linuxkpi.hz`, `loaded_for_ms` |
-| STATS | `jiffies`, `dma.maps`, `dma.bounces`, `dma.bounce_pool_misses` |
+| STATS | `jiffies`, `dma.maps`, `dma.bounces`, `dma.bounce_pool_misses`, `threads.records_live`, `threads.records_created`, `threads.records_freed` |
 | TUNABLES | each tunable's dotted key with its current value, and `<key>.flags` (`r`, `w`, `t`) |
 
 Each LinuxKPI driver links its own copy of LinuxKPI (`LINUXKPI_LIBS` are

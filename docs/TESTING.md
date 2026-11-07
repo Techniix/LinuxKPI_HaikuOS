@@ -360,3 +360,21 @@ lkpictl status mt7921e
 Then start `/boot/system/non-packaged/apps/LinuxKPIManager`. Send
 `~/manager-build.txt` if the build fails, or screenshots of each tab if it
 runs.
+
+### Checking the thread-record leak fix (same build)
+
+Before 2026-11-07 every thread that touched the driver left about a
+kilobyte behind for good [H: size estimated, not measured]. With the fix,
+records are freed 30 s after their thread exits. To see it:
+
+```sh
+lkpictl status mt7921e | grep threads
+for i in $(seq 50); do ifconfig /dev/net/mt7921e/0 > /dev/null; done
+sleep 35; ifconfig /dev/net/mt7921e/0 > /dev/null
+lkpictl status mt7921e | grep threads
+```
+
+`records_created` may rise; `records_live` should come back to about where
+it started, and `records_freed` should rise. The syslog also shows
+`linuxkpi: N thread records created, L live, F freed` every 256 records.
+If you see `cannot watch thread exits`, the fix is not active.

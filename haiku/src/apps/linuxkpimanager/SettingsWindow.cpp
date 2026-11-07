@@ -198,9 +198,11 @@ SettingsWindow::_Reset()
 	if (alert->Go() != 1)
 		return;
 	for (int32 i = 0; i < fDriver->tunables.CountItems(); i++) {
+		const TunableSpec* t = fDriver->tunables.ItemAt(i);
+		if (t->risk == kRiskUnsafe)
+			continue;	// never touched from here (docs/MANAGER.md §6)
 		BString error;
-		SettingsStore::Unset(*fDriver,
-			fDriver->tunables.ItemAt(i)->key.String(), error);
+		SettingsStore::Unset(*fDriver, t->key.String(), error);
 	}
 	fTarget.SendMessage(kMsgSettingsChanged);
 	Quit();

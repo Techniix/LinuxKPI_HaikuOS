@@ -67,7 +67,7 @@ MALLOC_DEFINE(M_LKPI_DMA, "lkpidma", "LinuxKPI DMA bounce bookkeeping");
 
 /* One bounced mapping. */
 struct lkpi_bounce {
-	struct lkpi_bounce	*next;
+	struct lkpi_bounce	*next;	/* "large" list only */
 	dma_addr_t		dma;	/* physical address of the bounce copy */
 	vm_paddr_t		orig;	/* the caller's physical range */
 	size_t			len;
@@ -79,14 +79,21 @@ struct lkpi_bounce {
 #define	LKPI_BOUNCE_SLOT	4096
 #define	LKPI_BOUNCE_SLOTS	512		/* 2 MiB per device */
 
-#define	LKPI_DMA_HASH	256
-
 struct linux_dma_priv {
 	uint64_t		dma_mask;
 	uint64_t		dma_coherent_mask;
 	struct mtx		lock;
 	u_int			nbounce;
-	struct lkpi_bounce	*hash[LKPI_DMA_HASH];
+	/*
+	 * Outstanding bounces. A bounce address always lies in memory we
+	 * allocated (pool or a contigmalloc block), never in a caller's buffer,
+	 * so an address is classified in O(1): inside the pool -> pool_owner[]
+	 * by slot; otherwise only the (rare) "large" list is searched. Most
+	 * unmaps/syncs are of identity mappings and must stay cheap: they run
+	 * per packet.
+	 */
+	struct lkpi_bounce	*pool_owner[LKPI_BOUNCE_SLOTS];
+	struct lkpi_bounce	*large;
 	/* bounce pool (lkpi_bounce_pool_get()) */
 	void			*pool_kva;
 	dma_addr_t		pool_dma;
@@ -127,14 +134,8 @@ lkpi_bounce_pool_put(struct linux_dma_priv *priv, int slot)
 	priv->pool_free[priv->pool_nfree++] = slot;
 }
 
-static u_int lkpi_dma_bounces, lkpi_dma_pool_misses, lkpi_dma_maps;
+static uint64_t lkpi_dma_bounces, lkpi_dma_pool_misses, lkpi_dma_maps;
 static u_int lkpi_dma_bounce_logged;
-
-static inline u_int
-lkpi_dma_hash(dma_addr_t dma)
-{
-	return ((u_int)(dma >> PAGE_SHIFT) % LKPI_DMA_HASH);
-}
 
 /* ---- per-device state (called from lkpi_pci.c) ------------------------- */
 
@@ -204,31 +205,35 @@ lkpi_bounce_to_cpu(struct lkpi_bounce *b, size_t off, size_t len)
 	vm_memcpy_to_physical(b->orig + off, (char *)b->kva + off, len, false);
 }
 
-/* Called with priv->lock held. Finds the bounce mapping containing dma. */
+/*
+ * Called with priv->lock held. Finds the bounce mapping containing dma
+ * (dma_sync_single_range_*() may pass an address inside a mapping). For the
+ * "large" list, *prevp is set to the link pointing at the result.
+ */
 static struct lkpi_bounce *
 lkpi_bounce_find(struct linux_dma_priv *priv, dma_addr_t dma,
     struct lkpi_bounce ***prevp)
 {
 	struct lkpi_bounce **pp, *b;
-	u_int i;
 
-	for (pp = &priv->hash[lkpi_dma_hash(dma)]; (b = *pp) != NULL;
-	    pp = &b->next) {
-		if (b->dma == dma)
-			goto found;
+	if (prevp != NULL)
+		*prevp = NULL;
+	if (priv->pool_kva != NULL && dma >= priv->pool_dma &&
+	    dma < priv->pool_dma + (dma_addr_t)LKPI_BOUNCE_SLOT *
+	    LKPI_BOUNCE_SLOTS) {
+		b = priv->pool_owner[(dma - priv->pool_dma) / LKPI_BOUNCE_SLOT];
+		if (b != NULL && dma < b->dma + b->len)
+			return (b);
+		return (NULL);
 	}
-	/* dma_sync_single_range_*() may pass an address inside a mapping. */
-	for (i = 0; i < LKPI_DMA_HASH; i++) {
-		for (pp = &priv->hash[i]; (b = *pp) != NULL; pp = &b->next) {
-			if (dma >= b->dma && dma < b->dma + b->len)
-				goto found;
+	for (pp = &priv->large; (b = *pp) != NULL; pp = &b->next) {
+		if (dma >= b->dma && dma < b->dma + b->len) {
+			if (prevp != NULL)
+				*prevp = pp;
+			return (b);
 		}
 	}
 	return (NULL);
-found:
-	if (prevp != NULL)
-		*prevp = pp;
-	return (b);
 }
 
 static bool
@@ -251,11 +256,9 @@ lkpi_dma_map_phys(struct device *dev, vm_paddr_t phys, size_t len,
 {
 	struct linux_dma_priv *priv = dev->dma_priv;
 	struct lkpi_bounce *b;
-	u_int h;
-
 	if (priv == NULL || len == 0)
 		return (0);
-	atomic_add_int(&lkpi_dma_maps, 1);
+	__atomic_fetch_add(&lkpi_dma_maps, 1, __ATOMIC_RELAXED);
 	/* Identity mapping: bus address == physical address (no IOMMU). */
 	if (phys + len - 1 <= priv->dma_mask)
 		return (phys);
@@ -294,24 +297,30 @@ lkpi_dma_map_phys(struct device *dev, vm_paddr_t phys, size_t len,
 	/* Speed diagnostics: how often we copy, and how often the pool is
 	 * exhausted (each miss is a contigmalloc(), i.e. a new area). */
 	{
-		u_int nb = atomic_fetchadd_int(&lkpi_dma_bounces, 1) + 1;
+		uint64_t nb = __atomic_add_fetch(&lkpi_dma_bounces, 1,
+		    __ATOMIC_RELAXED);
 
 		if (b->slot < 0)
-			atomic_add_int(&lkpi_dma_pool_misses, 1);
+			__atomic_fetch_add(&lkpi_dma_pool_misses, 1,
+			    __ATOMIC_RELAXED);
 		if ((nb & 0x3fff) == 0)
-			dev_info(dev, "lkpi_dma: %u bounces, %u pool misses, "
-			    "%u maps total\n", nb, lkpi_dma_pool_misses,
-			    lkpi_dma_maps);
+			dev_info(dev, "lkpi_dma: %llu bounces, %llu pool misses, "
+			    "%llu maps total\n", (unsigned long long)nb,
+			    (unsigned long long)lkpi_dma_pool_misses,
+			    (unsigned long long)lkpi_dma_maps);
 	}
 
 	if ((attrs & DMA_ATTR_SKIP_CPU_SYNC) == 0 &&
 	    lkpi_dma_to_device(direction))
 		lkpi_bounce_to_device(b, 0, len);
 
-	h = lkpi_dma_hash(b->dma);
 	mtx_lock(&priv->lock);
-	b->next = priv->hash[h];
-	priv->hash[h] = b;
+	if (b->slot >= 0) {
+		priv->pool_owner[b->slot] = b;
+	} else {
+		b->next = priv->large;
+		priv->large = b;
+	}
 	priv->nbounce++;
 	mtx_unlock(&priv->lock);
 	return (b->dma);
@@ -338,7 +347,10 @@ lkpi_dma_unmap(struct device *dev, dma_addr_t dma_addr, size_t len,
 		mtx_unlock(&priv->lock);
 		return;		/* identity mapping: nothing to undo */
 	}
-	*pp = b->next;
+	if (b->slot >= 0)
+		priv->pool_owner[b->slot] = NULL;
+	else
+		*pp = b->next;
 	priv->nbounce--;
 	mtx_unlock(&priv->lock);
 
@@ -754,8 +766,7 @@ lkpi_dmam_pool_destroy(struct device *dev, void *p)
 
 /* For the read-only status interface (lkpi_control.c). */
 void
-lkpi_dma_get_stats(unsigned int *maps, unsigned int *bounces,
-    unsigned int *pool_misses)
+lkpi_dma_get_stats(uint64_t *maps, uint64_t *bounces, uint64_t *pool_misses)
 {
 	*maps = lkpi_dma_maps;
 	*bounces = lkpi_dma_bounces;

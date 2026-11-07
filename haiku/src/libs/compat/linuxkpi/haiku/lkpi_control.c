@@ -33,8 +33,10 @@
 #include "lkpi_version.h"
 
 extern unsigned long jiffies;			/* lkpi_thread.cpp */
-void lkpi_dma_get_stats(unsigned int *maps, unsigned int *bounces,
-    unsigned int *pool_misses);			/* lkpi_dma.c */
+void lkpi_dma_get_stats(uint64_t *maps, uint64_t *bounces,
+    uint64_t *pool_misses);			/* lkpi_dma.c */
+void lkpi_thread_get_stats(int32 *live, int32 *created,
+    int32 *freed);				/* lkpi_thread.cpp */
 
 SET_DECLARE(__lkpi_tunable, struct lkpi_tunable);
 
@@ -66,26 +68,11 @@ reply_add(struct lkpi_reply *r, const char *key, const char *fmt, ...)
 		r->len += n;
 }
 
-/* Same naming rule as lkpi_tunables_fetch() in lkpi_sysinit.c. */
-static void
-tunable_key(const struct lkpi_tunable *t, char *buf, size_t len)
-{
-	const char *p = t->parent;
-	size_t i = 0;
-
-	if (*p == '_')
-		p++;
-	for (; *p != '\0' && i + 1 < len; p++)
-		buf[i++] = (*p == '_') ? '.' : *p;
-	if (i + 1 < len)
-		buf[i++] = '.';
-	buf[i] = '\0';
-	strlcat(buf, t->name, len);
-}
-
 static long long
 tunable_value(const struct lkpi_tunable *t)
 {
+	if (t->is_bool)
+		return (*(uint8_t *)t->ptr != 0);
 	switch (t->size) {
 	case 1: return t->is_signed ? *(int8_t *)t->ptr : *(uint8_t *)t->ptr;
 	case 2: return t->is_signed ? *(int16_t *)t->ptr : *(uint16_t *)t->ptr;
@@ -111,13 +98,19 @@ build_info(struct lkpi_reply *r, const struct lkpi_control_request *req)
 static void
 build_stats(struct lkpi_reply *r)
 {
-	unsigned int maps, bounces, misses;
+	uint64_t maps, bounces, misses;
+	int32 live, created, freed;
 
 	lkpi_dma_get_stats(&maps, &bounces, &misses);
+	lkpi_thread_get_stats(&live, &created, &freed);
 	reply_add(r, "jiffies", "%lu", jiffies);
-	reply_add(r, "dma.maps", "%u", maps);
-	reply_add(r, "dma.bounces", "%u", bounces);
-	reply_add(r, "dma.bounce_pool_misses", "%u", misses);
+	reply_add(r, "dma.maps", "%llu", (unsigned long long)maps);
+	reply_add(r, "dma.bounces", "%llu", (unsigned long long)bounces);
+	reply_add(r, "dma.bounce_pool_misses", "%llu",
+	    (unsigned long long)misses);
+	reply_add(r, "threads.records_live", "%d", (int)live);
+	reply_add(r, "threads.records_created", "%d", (int)created);
+	reply_add(r, "threads.records_freed", "%d", (int)freed);
 }
 
 static void
@@ -132,7 +125,7 @@ build_tunables(struct lkpi_reply *r)
 
 		if (t->ptr == NULL || t->name[0] == '\0')
 			continue;
-		tunable_key(t, key, sizeof(key));
+		lkpi_tunable_key(t, key, sizeof(key));
 		reply_add(r, key, "%lld", tunable_value(t));
 		snprintf(kk, sizeof(kk), "%s.flags", key);
 		reply_add(r, kk, "%s%s%s",
@@ -140,6 +133,14 @@ build_tunables(struct lkpi_reply *r)
 		    (t->access & CTLFLAG_WR) ? "w" : "",
 		    (t->access & CTLFLAG_TUN) ? "t" : "");
 	}
+}
+
+/* [base, base + size) lies entirely in userland and does not wrap. */
+static bool
+lkpi_user_range(addr_t base, size_t size)
+{
+	return (size != 0 && base + size > base && IS_USER_ADDRESS(base) &&
+	    IS_USER_ADDRESS(base + size - 1));
 }
 
 static status_t
@@ -153,22 +154,25 @@ lkpi_control(void *cookie, uint32 op, void *arg, size_t length)
 	if (op < LKPI_CTL_FIRST || op > LKPI_CTL_LAST)
 		return B_DEV_INVALID_IOCTL;	/* not ours: next handler */
 
-	if (arg == NULL || !IS_USER_ADDRESS(arg) ||
-	    (length != 0 && length < sizeof(req)))
-		return B_BAD_VALUE;
+	/* B_BAD_DATA, not B_BAD_VALUE: userland reads B_BAD_VALUE as "driver
+	 * without this interface" (wlan_control()'s answer). */
+	if (arg == NULL || (length != 0 && length < sizeof(req)) ||
+	    !lkpi_user_range((addr_t)arg, sizeof(req)))
+		return B_BAD_DATA;
 	if (user_memcpy(&req, arg, sizeof(req)) != B_OK)
 		return B_BAD_ADDRESS;
 	req.name[sizeof(req.name) - 1] = '\0';
 	if (req.magic != LKPI_CONTROL_MAGIC)
-		return B_BAD_VALUE;
+		return B_BAD_DATA;
 	if (req.version != LKPI_CONTROL_VERSION)
 		return B_BAD_TYPE;		/* caller must match the ABI */
 	if (req.buffer == 0 || req.buffer_size == 0 ||
-	    !IS_USER_ADDRESS((addr_t)req.buffer) ||
-	    !IS_USER_ADDRESS((addr_t)req.buffer + req.buffer_size - 1))
+	    req.buffer != (uint64_t)(addr_t)req.buffer)	/* 32-bit kernel */
 		return B_BAD_ADDRESS;
 
 	r.size = MIN(req.buffer_size, LKPI_CONTROL_MAX_REPLY);
+	if (!lkpi_user_range((addr_t)req.buffer, r.size))
+		return B_BAD_ADDRESS;
 	r.len = 0;
 	r.buf = malloc(r.size);
 	if (r.buf == NULL)

@@ -384,10 +384,24 @@ DriverCatalog::_RefreshDriver(Driver* driver)
 			BPath link(base.Path(), "kernel/drivers/dev");
 			link.Append(driver->publish.String());
 			driver->linkPath = link.Path();
-			struct stat st;
-			driver->enabledAtBoot = lstat(link.Path(), &st) == 0;
 		}
 		break;
+	}
+
+	// A boot link in any of the directories publishes the driver, not only
+	// the one next to the binary we found.
+	for (size_t i = 0; i < B_COUNT_OF(kPlaces) && !driver->publish.IsEmpty();
+			i++) {
+		BPath base;
+		if (find_directory(kPlaces[i].which, &base) != B_OK)
+			continue;
+		BPath link(base.Path(), "kernel/drivers/dev");
+		link.Append(driver->publish.String());
+		struct stat st;
+		if (lstat(link.Path(), &st) == 0) {
+			driver->enabledAtBoot = true;
+			break;
+		}
 	}
 
 	driver->published = false;

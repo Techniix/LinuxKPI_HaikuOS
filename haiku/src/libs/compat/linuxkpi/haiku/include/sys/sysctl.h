@@ -137,31 +137,38 @@ struct lkpi_tunable {
 	unsigned int	access;
 	unsigned char	size;		/* bytes */
 	unsigned char	is_signed;
+	unsigned char	is_bool;	/* C bool: only 0 or 1 may be stored */
 };
 
-#define __LKPI_TUNABLE2(parent, name, access, ptr, sz, sgn)		\
+/* FreeBSD dotted name of a tunable, e.g. "compat.linuxkpi.80211.hw_crypto"
+ * (lkpi_sysinit.c). Node names containing '_' cannot be told apart from the
+ * separators; none of the LinuxKPI tunables have one. */
+void	lkpi_tunable_key(const struct lkpi_tunable *t, char *buf, size_t len);
+
+#define __LKPI_TUNABLE2(parent, name, access, ptr, sz, sgn, isbool)	\
 	static struct lkpi_tunable lkpi_tunable_##parent##_##name = {	\
-		#parent, #name, (void *)(ptr), (access), (sz), (sgn) };	\
+		#parent, #name, (void *)(ptr), (access), (sz), (sgn),	\
+		(isbool) };						\
 	DATA_SET(__lkpi_tunable, lkpi_tunable_##parent##_##name)
-#define __LKPI_TUNABLE(parent, name, access, ptr, sz, sgn)		\
-	__LKPI_TUNABLE2(parent, name, access, ptr, sz, sgn)
+#define __LKPI_TUNABLE(parent, name, access, ptr, sz, sgn, isbool)	\
+	__LKPI_TUNABLE2(parent, name, access, ptr, sz, sgn, isbool)
 
 #define SYSCTL_INT(parent, nbr, name, access, ptr, val, descr)	\
-	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(int), 1)
+	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(int), 1, 0)
 #define SYSCTL_UINT(parent, nbr, name, access, ptr, val, descr)	\
-	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(unsigned int), 0)
+	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(unsigned int), 0, 0)
 #define SYSCTL_LONG(parent, nbr, name, access, ptr, val, descr)	\
-	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(long), 1)
+	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(long), 1, 0)
 #define SYSCTL_ULONG(parent, nbr, name, access, ptr, val, descr) \
-	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(unsigned long), 0)
+	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(unsigned long), 0, 0)
 #define SYSCTL_U8(parent, nbr, name, access, ptr, val, descr)	\
-	__LKPI_TUNABLE(parent, name, access, ptr, 1, 0)
+	__LKPI_TUNABLE(parent, name, access, ptr, 1, 0, 0)
 #define SYSCTL_U16(parent, nbr, name, access, ptr, val, descr)	\
-	__LKPI_TUNABLE(parent, name, access, ptr, 2, 0)
+	__LKPI_TUNABLE(parent, name, access, ptr, 2, 0, 0)
 #define SYSCTL_S16(parent, nbr, name, access, ptr, val, descr)	\
-	__LKPI_TUNABLE(parent, name, access, ptr, 2, 1)
+	__LKPI_TUNABLE(parent, name, access, ptr, 2, 1, 0)
 #define SYSCTL_BOOL(parent, nbr, name, access, ptr, val, descr)	\
-	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(bool), 0)
+	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(bool), 0, 1)
 #define SYSCTL_STRING(parent, nbr, name, access, arg, len, descr) __lkpi_sysctl_unused(parent##_##name)
 #define SYSCTL_COUNTER_U64(parent, nbr, name, access, ptr, descr) __lkpi_sysctl_unused(parent##_##name)
 #define SYSCTL_PROC(parent, nbr, name, access, ptr, arg, handler, fmt, descr) __lkpi_sysctl_unused(parent##_##name)

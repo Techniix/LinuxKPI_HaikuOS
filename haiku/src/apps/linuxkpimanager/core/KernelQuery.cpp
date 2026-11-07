@@ -93,10 +93,16 @@ KernelQuery::Query(const char* interface, uint32 op, BString& reply)
 	}
 	close(fd);
 
-	// Drivers built before the control interface answer B_BAD_VALUE (from
-	// wlan_control) or B_DEV_INVALID_IOCTL; report that clearly.
-	if (status == B_BAD_VALUE || status == B_DEV_INVALID_IOCTL)
+	// A driver built before the control interface answers B_BAD_VALUE
+	// (wlan_control()) or B_DEV_INVALID_IOCTL. The network stack also says
+	// B_BAD_VALUE when the interface has gone away meanwhile, so tell the
+	// two apart. (Our kernel side uses B_BAD_DATA for malformed requests.)
+	if (status == B_DEV_INVALID_IOCTL)
 		return B_NOT_SUPPORTED;
+	if (status == B_BAD_VALUE) {
+		BNetworkInterface check(interface);
+		return check.Exists() ? B_NOT_SUPPORTED : B_ENTRY_NOT_FOUND;
+	}
 	return status;
 }
 

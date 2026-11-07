@@ -99,12 +99,27 @@ for s in $(cat "$OUT/undefined.txt"); do
 	case $s in __start_set_*|__stop_set_*) continue ;; esac
 	grep -qx -- "$s" "$OUT/haiku-uses.txt" && continue
 	case $s in
+	# C++ ABI support: the kernel links libsupc++ (KernelLd) and exports all
+	# symbols (kernel_versions: "global: *"); add-ons resolve them via kernel.so
+	_ZTVN10__cxxabiv1*|_ZTIN10__cxxabiv1*|__cxa_*|__gxx_*)
+		echo "$s	libsupc++ in the kernel (exported)" \
+			>> "$OUT/new-imports.txt"
+		continue ;;
+	esac
+	qual=
+	case $s in
 	_Znw*|_Zna*) name='operator new' ;;
 	_Zdl*|_Zda*) name='operator delete' ;;
-	_Z*) name=$(echo "$s" | c++filt | sed 's/(.*//; s/.*:://') ;;
+	# vtable / typeinfo: emitted where the class's first out-of-line
+	# virtual is defined; look for any "Class::" definition
+	_ZTV*|_ZTI*) name=$(echo "$s" | c++filt | sed 's/^vtable for //; s/^typeinfo for //')
+		qual="^$name::" ;;
+	_Z*) qual=$(echo "$s" | c++filt | sed 's/(.*//; s/<.*//')
+		name=$(echo "$qual" | sed 's/.*:://')
+		case $qual in *::*) qual="^$qual[ ]*\(" ;; *) qual= ;; esac ;;
 	*) name=$s ;;
 	esac
-	where=$(grep -rlE "(^|[ *])$name[ ]*\(|^$name$|std::$name" \
+	where=$(grep -rlE "(^|[ *])$name[ ]*\(|^$name$|std::$name${qual:+|$qual}" \
 		"$H/src/system/kernel" "$H/src/system/libroot/posix/string" \
 		"$H/src/system/libroot/posix/musl/string" \
 		"$H/src/system/libroot/os/driver_settings.cpp" 2>/dev/null | head -1)

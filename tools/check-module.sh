@@ -35,7 +35,7 @@ BASE="-nostdinc -isystem $GCCINC -ffreestanding -finline -fno-semantic-interposi
  -U__linux__ -U__linux -Ulinux -U__gnu_linux__ -U__unix__ -U__unix -Uunix \
  -D__HAIKU__ -D__HAIKU_ARCH_X86_64 -D_KERNEL_MODE -D__GLIBC_PREREQ(a,b)=0 \
  -include $H/headers/config/HaikuConfig.h"
-CXXONLY="-fno-exceptions -fno-rtti -fno-use-cxa-atexit -nostdinc++ -I$SHIM"
+CXXONLY="-fno-exceptions -fno-use-cxa-atexit -nostdinc++ -I$SHIM"
 
 # HAIKU_PRIVATE_KERNEL_HEADERS + public headers, in Haiku's order.
 SYSINC="-I$H/headers -I$H/headers/config -I$H/headers/os -I$H/headers/os/kernel \

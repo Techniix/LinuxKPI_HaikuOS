@@ -18,6 +18,7 @@
 #include <machine/md_var.h>
 #include <sys/socketvar.h>
 #include <linux/compat.h>	/* fpu_safe_exec_cb_t */
+#include <linux/sched.h>	/* put_task_struct */
 
 #include <KernelExport.h>
 #include <OS.h>
@@ -388,4 +389,24 @@ hexdump(const void *ptr, int length, const char *hdr, int flags)
 		}
 		printf("%s%s\n", hdr != NULL ? hdr : "", line);
 	}
+}
+
+
+/*
+ * FreeBSD's linuxkpi_thread_dtor() (linux_current.c), which Haiku never
+ * calls: drop the exiting thread's reference to its Linux task_struct.
+ * Called by the thread reaper in lkpi_thread.cpp from the exiting thread.
+ * A kthread stopped with kthread_stop() has already handed its task over
+ * (linux_kthread_fn() clears td_lkpi_task), as on FreeBSD.
+ */
+void
+lkpi_thread_release_task(struct thread *td)
+{
+	struct task_struct *ts;
+
+	ts = td->td_lkpi_task;
+	if (ts == NULL)
+		return;
+	td->td_lkpi_task = NULL;
+	put_task_struct(ts);
 }

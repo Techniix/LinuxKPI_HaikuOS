@@ -47,7 +47,7 @@ Every LinuxKPI unit is compiled with `-include lkpi_haiku_preinclude.h`, which:
 
 | LinuxKPI / FreeBSD need | Haiku implementation | File |
 |---|---|---|
-| `curthread`, sleepqueue, `pause` | per-thread record in a hash keyed by `thread_id`, Haiku `ConditionVariable` | `lkpi_thread.cpp` |
+| `curthread`, sleepqueue, `pause` | per-thread record in a hash keyed by `thread_id`, Haiku `ConditionVariable`; freed on THREAD_REMOVED (kernel notification service), which also does FreeBSD's `thread_dtor` work (drop `current`'s `task_struct`) | `lkpi_thread.cpp`, `lkpi_misc.c` |
 | `sx` locks | Haiku mutex (shared = exclusive) | `lkpi_sx.c` |
 | UMA zones | `object_cache` | `lkpi_uma.cpp` |
 | pages, `kmem`, `ioremap` | contiguous areas + `vm_page` descriptors in a pfn hash; `map_physical_memory` | `lkpi_page.c` |
@@ -59,7 +59,7 @@ Every LinuxKPI unit is compiled with `-include lkpi_haiku_preinclude.h`, which:
 | `SYSINIT` ordering | own linker set + sort | `lkpi_sysinit.c` |
 | interrupts | freebsd_network threaded handlers, MSI only | `lkpi_pci.c`, driver glue |
 | firmware | freebsd_network `firmware(9)` → `/boot/system/[non-packaged/]data/firmware/<driver>/` | glue name map |
-| DMA API | bus address = physical (x86, no IOMMU, coherent); bounce below the DMA mask via `vm_memcpy_{to,from}_physical()`; coherent memory below the coherent mask | `lkpi_dma.c` |
+| DMA API | bus address = physical (x86, no IOMMU, coherent); bounce below the DMA mask via `vm_memcpy_{to,from}_physical()` through a 512-slot pool (O(1) lookup by slot, so unmap/sync of the ~94% unbounced mappings costs nothing); coherent memory below the coherent mask | `lkpi_dma.c` |
 | `jiffies` | real variable, updated by a 1 ms periodic kernel timer | `lkpi_thread.cpp` |
 | kthreads | `kthread_add`/`sched_add`/`sched_prio` routed to versions that use LinuxKPI thread records (freebsd_network casts thread ids to `struct thread *`) | `lkpi_thread.cpp`, `lkpi_haiku_wrap.h` |
 | `sema(9)` | counter + `mtx` + `cv` | `lkpi_sema.c` |

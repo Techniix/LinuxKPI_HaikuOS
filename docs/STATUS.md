@@ -45,7 +45,12 @@ New kernel imports beyond freebsd_network's: `call_all_cpus_sync`,
 
 ## Known limits
 
-- Per-thread records are never freed (small leak per thread that touches LinuxKPI).
+- Per-thread records and their Linux `task_struct` are freed when the Haiku
+  thread exits (kernel "threads" notification, THREAD_REMOVED), with a 30 s
+  grace period for lock-free iterators. Before 2026-11-07 they were never
+  freed: every thread that ever touched LinuxKPI (e.g. via `kfree()`, which
+  reads `curthread`) leaked one record and one `task_struct`. Counters:
+  `threads.records_*` in `lkpictl status`, and a log line every 256 records.
 - `malloc_usable_size` returns 0.
 - Memory attributes (write-combining, uncached) are not applied to page allocations.
 - One Haiku area per page allocation — fine for a NIC, wasteful at scale.
