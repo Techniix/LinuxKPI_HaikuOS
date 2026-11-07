@@ -19,6 +19,10 @@
  *    contiguous memory below the mask, copied with Haiku's
  *    vm_memcpy_{to,from}_physical() at map, sync and unmap time.
  *
+ * Bounces up to LKPI_BOUNCE_SLOT bytes (every normal frame) take a slot from
+ * a per-device pool below the mask, allocated on first use; only larger
+ * ones (firmware download chunks) get their own contigmalloc().
+ *
  * Coherent memory is allocated below the coherent mask, so it never bounces.
  * lkpi_page.c prefers memory below 4 GiB for alloc_pages(), so page_pool RX
  * buffers normally do not bounce either.
@@ -67,9 +71,13 @@ struct lkpi_bounce {
 	dma_addr_t		dma;	/* physical address of the bounce copy */
 	vm_paddr_t		orig;	/* the caller's physical range */
 	size_t			len;
-	size_t			alloc;	/* bytes of the bounce allocation */
+	size_t			alloc;	/* contigmalloc size; 0: pool slot */
+	int			slot;	/* pool slot index if alloc == 0 */
 	void			*kva;	/* kernel address of the bounce copy */
 };
+
+#define	LKPI_BOUNCE_SLOT	4096
+#define	LKPI_BOUNCE_SLOTS	512		/* 2 MiB per device */
 
 #define	LKPI_DMA_HASH	256
 
@@ -79,7 +87,45 @@ struct linux_dma_priv {
 	struct mtx		lock;
 	u_int			nbounce;
 	struct lkpi_bounce	*hash[LKPI_DMA_HASH];
+	/* bounce pool (lkpi_bounce_pool_get()) */
+	void			*pool_kva;
+	dma_addr_t		pool_dma;
+	bool			pool_failed;
+	int			pool_nfree;
+	int			pool_free[LKPI_BOUNCE_SLOTS];
 };
+
+/* Called with priv->lock held. Returns a slot index or -1. */
+static int
+lkpi_bounce_pool_get(struct linux_dma_priv *priv)
+{
+	int i;
+
+	if (priv->pool_kva == NULL) {
+		if (priv->pool_failed)
+			return (-1);
+		priv->pool_kva = contigmalloc(
+		    (size_t)LKPI_BOUNCE_SLOT * LKPI_BOUNCE_SLOTS, M_LKPI_DMA,
+		    M_NOWAIT, 0, priv->dma_mask, PAGE_SIZE, 0);
+		if (priv->pool_kva == NULL) {
+			priv->pool_failed = true;
+			return (-1);
+		}
+		priv->pool_dma = vtophys(priv->pool_kva);
+		for (i = 0; i < LKPI_BOUNCE_SLOTS; i++)
+			priv->pool_free[i] = LKPI_BOUNCE_SLOTS - 1 - i;
+		priv->pool_nfree = LKPI_BOUNCE_SLOTS;
+	}
+	if (priv->pool_nfree == 0)
+		return (-1);
+	return (priv->pool_free[--priv->pool_nfree]);
+}
+
+static void
+lkpi_bounce_pool_put(struct linux_dma_priv *priv, int slot)
+{
+	priv->pool_free[priv->pool_nfree++] = slot;
+}
 
 static u_int lkpi_dma_bounce_logged;
 
@@ -115,6 +161,9 @@ linux_pdev_dma_uninit(struct pci_dev *pdev)
 	if (priv->nbounce != 0)
 		dev_warn(&pdev->dev, "lkpi_dma: %u bounced mappings were never "
 		    "unmapped; leaking them\n", priv->nbounce);
+	else if (priv->pool_kva != NULL)
+		contigfree(priv->pool_kva,
+		    (size_t)LKPI_BOUNCE_SLOT * LKPI_BOUNCE_SLOTS, M_LKPI_DMA);
 	mtx_destroy(&priv->lock);
 	pdev->dev.dma_priv = NULL;
 	free(priv, M_LKPI_DMA);
@@ -212,14 +261,27 @@ lkpi_dma_map_phys(struct device *dev, vm_paddr_t phys, size_t len,
 	b = malloc(sizeof(*b), M_LKPI_DMA, M_NOWAIT | M_ZERO);
 	if (b == NULL)
 		return (0);
-	b->alloc = round_page(len);
-	b->kva = contigmalloc(b->alloc, M_LKPI_DMA, M_NOWAIT, 0,
-	    priv->dma_mask, PAGE_SIZE, 0);
-	if (b->kva == NULL) {
-		free(b, M_LKPI_DMA);
-		return (0);
+	b->slot = -1;
+	if (len <= LKPI_BOUNCE_SLOT) {
+		mtx_lock(&priv->lock);
+		b->slot = lkpi_bounce_pool_get(priv);
+		mtx_unlock(&priv->lock);
 	}
-	b->dma = vtophys(b->kva);
+	if (b->slot >= 0) {
+		b->alloc = 0;
+		b->kva = (char *)priv->pool_kva +
+		    (size_t)b->slot * LKPI_BOUNCE_SLOT;
+		b->dma = priv->pool_dma + (dma_addr_t)b->slot * LKPI_BOUNCE_SLOT;
+	} else {
+		b->alloc = round_page(len);
+		b->kva = contigmalloc(b->alloc, M_LKPI_DMA, M_NOWAIT, 0,
+		    priv->dma_mask, PAGE_SIZE, 0);
+		if (b->kva == NULL) {
+			free(b, M_LKPI_DMA);
+			return (0);
+		}
+		b->dma = vtophys(b->kva);
+	}
 	b->orig = phys;
 	b->len = len;
 
@@ -269,7 +331,12 @@ lkpi_dma_unmap(struct device *dev, dma_addr_t dma_addr, size_t len,
 	if ((attrs & DMA_ATTR_SKIP_CPU_SYNC) == 0 &&
 	    lkpi_dma_to_cpu(direction))
 		lkpi_bounce_to_cpu(b, 0, b->len);
-	contigfree(b->kva, b->alloc, M_LKPI_DMA);
+	if (b->alloc == 0) {
+		mtx_lock(&priv->lock);
+		lkpi_bounce_pool_put(priv, b->slot);
+		mtx_unlock(&priv->lock);
+	} else
+		contigfree(b->kva, b->alloc, M_LKPI_DMA);
 	free(b, M_LKPI_DMA);
 }
 

@@ -91,6 +91,7 @@ Kept in `patches/haiku/` against `BASE_COMMIT`:
 | 0003 | build hooks for `linuxkpi` and `lkpi_pcitest` |
 | 0004 | **upstream bug:** compat `atomic_set_*` must be OR (atomic(9)), not store |
 | 0005 | build hook for `mt7921e` |
+| 0006 | net80211 `ieee80211_ampdu_request()` returns 1 on success, as in FreeBSD (LinuxKPI 802.11 relies on it; Haiku's only other caller ignores the value) |
 
 ## Generated files
 
