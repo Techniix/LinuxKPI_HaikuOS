@@ -49,13 +49,20 @@ cp lkpi_pcitest $D/bin/
 ln -sf ../../bin/lkpi_pcitest $D/dev/net/lkpi_pcitest
 ```
 
-Firmware for stage (b) — copy the two files from `linux-firmware`
-(`mediatek/`):
+Firmware for stage (b) comes from `linux-firmware` (`mediatek/`). The
+names depend on the chip, exactly as in Linux mt7921:
+
+| PCI device | Chip | Files |
+|---|---|---|
+| `0616`, `7922` | MT7922 | `WIFI_MT7922_patch_mcu_1_1_hdr.bin`, `WIFI_RAM_CODE_MT7922_1.bin` |
+| `7961`, `0608` | MT7921 | `WIFI_MT7961_patch_mcu_1_2_hdr.bin`, `WIFI_RAM_CODE_MT7961_1.bin` |
 
 ```sh
 F=/boot/system/non-packaged/data/firmware/lkpi_pcitest
-mkdir -p $F
-cp WIFI_MT7961_patch_mcu_1_2_hdr.bin WIFI_RAM_CODE_MT7961_1.bin $F/
+mkdir -p $F && cd $F
+U=https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/mediatek
+curl -LO $U/WIFI_MT7922_patch_mcu_1_1_hdr.bin    # MT7922; use the MT7961 names for MT7921
+curl -LO $U/WIFI_RAM_CODE_MT7922_1.bin
 ```
 
 Without firmware, stage (a) still runs; stage (b) logs an error.
@@ -71,11 +78,11 @@ grep -E "stage|linuxkpi|lkpi" /var/log/syslog | tail -40
 ### Expected output
 
 ```
-... stage a: probe 14c3:7961 (subsys ....:....) rev ..
+... stage a: probe 14c3:0616 (subsys ....:....) rev ..
 ... stage a: BAR0 start 0x... len 0x... mapped at 0x...
 ... stage a: irq N installed (msi=1)
-... stage b: mediatek/WIFI_MT7961_patch_mcu_1_2_hdr.bin: NNNN bytes, crc32 ........
-... stage b: mediatek/WIFI_RAM_CODE_MT7961_1.bin: NNNN bytes, crc32 ........
+... stage b: mediatek/WIFI_MT7922_patch_mcu_1_1_hdr.bin: NNNN bytes, crc32 ........
+... stage b: mediatek/WIFI_RAM_CODE_MT7922_1.bin: NNNN bytes, crc32 ........
 ... stage a: attach OK, tearing down again
 ... stage a: self-test complete; declining the device on purpose (-ENODEV)
 ```

@@ -20,6 +20,9 @@ HAIKU_FIRMWARE_NAME_MAP({
 	{"mediatek/WIFI_MT7961_patch_mcu_1_2_hdr.bin",
 		"WIFI_MT7961_patch_mcu_1_2_hdr.bin"},
 	{"mediatek/WIFI_RAM_CODE_MT7961_1.bin", "WIFI_RAM_CODE_MT7961_1.bin"},
+	{"mediatek/WIFI_MT7922_patch_mcu_1_1_hdr.bin",
+		"WIFI_MT7922_patch_mcu_1_1_hdr.bin"},
+	{"mediatek/WIFI_RAM_CODE_MT7922_1.bin", "WIFI_RAM_CODE_MT7922_1.bin"},
 });
 
 /*

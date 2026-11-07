@@ -29,11 +29,17 @@
 
 static bool load_firmware = true;
 module_param(load_firmware, bool, 0444);
-MODULE_PARM_DESC(load_firmware, "stage (b): request the MT7921 firmware");
+MODULE_PARM_DESC(load_firmware, "stage (b): request the MT7921/MT7922 firmware");
 
-static const char *const fw_names[] = {
+/* Same file names as Linux mt7921 (mt7921.h): MT7922 parts (0616, 7922)
+ * use the MT7922 blobs, everything else the MT7961 ones. */
+static const char *const fw_names_7961[] = {
 	"mediatek/WIFI_MT7961_patch_mcu_1_2_hdr.bin",
 	"mediatek/WIFI_RAM_CODE_MT7961_1.bin",
+};
+static const char *const fw_names_7922[] = {
+	"mediatek/WIFI_MT7922_patch_mcu_1_1_hdr.bin",
+	"mediatek/WIFI_RAM_CODE_MT7922_1.bin",
 };
 
 struct pcitest {
@@ -58,10 +64,13 @@ static void
 pcitest_firmware(struct pcitest *t)
 {
 	const struct firmware *fw;
+	const char *const *fw_names;
 	unsigned int i;
 	int err;
 
-	for (i = 0; i < ARRAY_SIZE(fw_names); i++) {
+	fw_names = (t->pdev->device == 0x0616 || t->pdev->device == 0x7922) ?
+	    fw_names_7922 : fw_names_7961;
+	for (i = 0; i < 2; i++) {
 		err = request_firmware(&fw, fw_names[i], &t->pdev->dev);
 		if (err != 0) {
 			dev_err(&t->pdev->dev, "stage b: %s: error %d\n",
