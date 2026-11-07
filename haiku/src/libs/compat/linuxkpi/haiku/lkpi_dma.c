@@ -298,7 +298,7 @@ lkpi_dma_map_phys(struct device *dev, vm_paddr_t phys, size_t len,
 
 		if (b->slot < 0)
 			atomic_add_int(&lkpi_dma_pool_misses, 1);
-		if ((nb & 0x3ffff) == 0)
+		if ((nb & 0x3fff) == 0)
 			dev_info(dev, "lkpi_dma: %u bounces, %u pool misses, "
 			    "%u maps total\n", nb, lkpi_dma_pool_misses,
 			    lkpi_dma_maps);

@@ -266,7 +266,7 @@ Useful keys:
 | `compat.linuxkpi.mt7921_pci_disable_aspm` | 0 | mt7921e: turn off PCIe power saving (ASPM). |
 | `compat.linuxkpi.mt7921_disable_clc` | 0 | mt7921e: ignore the firmware's country-location table. |
 
-The DMA layer logs a summary every 262,144 copies made because a buffer is
+The DMA layer logs a summary every 16,384 copies made because a buffer is
 above the card's 32-bit DMA limit:
 
 ```
