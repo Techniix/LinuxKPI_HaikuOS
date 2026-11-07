@@ -27,7 +27,18 @@
 #define bus_dmamap_destroy(...)	lkpi_errno_from_haiku(bus_dmamap_destroy(__VA_ARGS__))
 #define bus_dmamap_load(...)	lkpi_errno_from_haiku(bus_dmamap_load(__VA_ARGS__))
 #define bus_dmamem_alloc(...)	lkpi_errno_from_haiku(bus_dmamem_alloc(__VA_ARGS__))
-#define taskqueue_start_threads(...) lkpi_errno_from_haiku(taskqueue_start_threads(__VA_ARGS__))
+/*
+ * Thread priority for every thread LinuxKPI starts (work queues, NAPI,
+ * tasklets via lkpi_gtaskqueue.c, kthreads in lkpi_thread.cpp).
+ * freebsd_network defines PWAIT/PI_SOFT/PI_NET on Haiku's scale (92, 99,
+ * 91): far above the desktop (10-20). A LinuxKPI thread that loops then
+ * freezes the machine (first stage (c) run with RX rings filled). Run them
+ * at normal priority until the driver is known to behave; raise later.
+ */
+#define LKPI_THREAD_PRIORITY	B_NORMAL_PRIORITY
+#define taskqueue_start_threads(tqp, count, pri, ...)			\
+	lkpi_errno_from_haiku(taskqueue_start_threads((tqp), (count),	\
+	    LKPI_THREAD_PRIORITY, __VA_ARGS__))
 /*
  * freebsd_network's kthread_add()/sched_add()/sched_prio() use the Haiku
  * thread_id cast to a struct thread pointer; LinuxKPI dereferences

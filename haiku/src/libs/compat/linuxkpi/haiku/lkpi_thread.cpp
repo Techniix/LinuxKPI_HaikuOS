@@ -180,13 +180,13 @@ lkpi_sched_add(struct thread* td, int /* flags */)
 /* FreeBSD priorities: lower is more important; below PRI_MIN_TIMESHARE (120)
  * are interrupt/realtime classes. Haiku: higher is more important. Map the
  * "raised" FreeBSD classes LinuxKPI uses (PI_SWI(SWI_NET) for kthreads) to
- * an urgent but not real-time Haiku priority. */
+ * normal priority for now (see LKPI_THREAD_PRIORITY, lkpi_haiku_wrap.h). */
 extern "C" void
 lkpi_sched_prio(struct thread* td, u_char prio)
 {
+	/* See LKPI_THREAD_PRIORITY in lkpi_haiku_wrap.h. */
 	td->td_priority = prio;
-	set_thread_priority(td->td_tid,
-		prio < 120 ? B_URGENT_DISPLAY_PRIORITY : B_NORMAL_PRIORITY);
+	set_thread_priority(td->td_tid, B_NORMAL_PRIORITY);
 }
 
 
@@ -537,7 +537,7 @@ lkpi_jiffies_uninit(void)
 
 /* rtprio(2) for LinuxKPI's sched_set_fifo[_low]() (mt76 worker threads).
  * Haiku has no real-time FIFO class that is safe for a busy driver thread;
- * use an urgent normal priority, like lkpi_sched_prio(). (sys/rtprio.h
+ * use normal priority, like lkpi_sched_prio(). (sys/rtprio.h
  * declares it without extern "C", so it is not included here.) */
 struct rtprio;
 extern "C" int
@@ -545,6 +545,6 @@ rtp_to_pri(struct rtprio* rtp, struct thread* td)
 {
 	if (td == NULL)
 		return EINVAL;
-	set_thread_priority(td->td_tid, B_URGENT_DISPLAY_PRIORITY);
+	set_thread_priority(td->td_tid, B_NORMAL_PRIORITY);
 	return 0;
 }
