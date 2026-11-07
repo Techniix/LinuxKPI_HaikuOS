@@ -159,8 +159,16 @@ linux_free_pages(struct page *page, unsigned int order)
 	if (page == NULL)
 		return;
 	head = page->lkpi_head;
-	if (head != page)
-		panic("LinuxKPI: free_pages() of a tail page %p", page);
+	/*
+	 * As FreeBSD's linux_free_pages(): drop one reference and free only
+	 * when it was the last. put_page()/__free_page() end up here, and pages
+	 * are shared (get_page(), skb fragments, page_pool RX buffers), so
+	 * freeing unconditionally was a use-after-free/double free. The
+	 * reference count of an allocation lives on its head page; a reference
+	 * dropped through a tail page counts against the head too.
+	 */
+	if (!vm_page_unwire_noq(head))
+		return;
 	npages = 1UL << head->lkpi_order;
 
 	mtx_lock(&lkpi_page_lock);
