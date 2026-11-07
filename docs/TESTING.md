@@ -9,8 +9,8 @@ machine at boot, so **read the recovery section before installing.**
 ## 0. Before you start
 
 - Have **wired ethernet or a USB tether** available. Haiku has no native
-  MT7921 driver, so nothing changes for Wi-Fi either way, but you'll want
-  a network to pull logs off the machine.
+  MT7921 driver, so stock Haiku has no Wi-Fi on this card anyway, but you'll
+  want a network to pull logs off the machine.
 - Know how to reach the boot menu: hold **Shift** (or press Space) right
   after the firmware/BIOS screen.
 - Record your exact card:
@@ -20,6 +20,21 @@ machine at boot, so **read the recovery section before installing.**
   ```
 
   Note the `device` ID. If it isn't one of the five above, stop and report it.
+
+- Make sure **no other driver claims the card**. Only one driver can reserve a
+  PCI device; if another one has it, syslog shows
+  `pci_reserve_device for driver lkpi_pcitest failed: Name in use`.
+  Find and move aside any other MT7921/MT7922 driver, then reboot:
+
+  ```sh
+  find /boot -iname "*mediatek*" -path "*drivers*" 2>/dev/null
+  ```
+
+- `rescan` is in Haiku's source tree but not installed by default. Build it once:
+
+  ```sh
+  gcc /path/to/haiku/src/bin/rescan.c -o ~/rescan
+  ```
 
 ## 1. Build (on a Haiku build host)
 
@@ -70,7 +85,7 @@ Without firmware, stage (a) still runs; stage (b) logs an error.
 ## 3. Run
 
 ```sh
-rescan lkpi_pcitest
+~/rescan lkpi_pcitest
 sleep 2
 grep -E "stage|linuxkpi|lkpi" /var/log/syslog | tail -40
 ```
