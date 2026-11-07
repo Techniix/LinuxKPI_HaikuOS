@@ -48,6 +48,11 @@ rule UseLinuxKPI
 # (not static libraries) on purpose: LinuxKPI objects that are only reached
 # through SYSINIT linker sets (e.g. linux_current.o, which makes 'current'
 # work) would otherwise be dropped by the linker.
-LINUXKPI_LIBS = linuxkpi.o linuxkpi_haiku.o libfreebsd_network.a ;
-LINUXKPI_WLAN_LIBS = linuxkpi_wlan.o linuxkpi.o linuxkpi_haiku.o
+# Merge objects carry no grist and don't start with "lib", so KernelAddon's
+# LinkAgainst would turn them into -l<name>; <nogrist> makes it bind the file
+# (the same trick Haiku uses for <nogrist>kernel.so).
+LINUXKPI_LIBS = <nogrist>linuxkpi.o <nogrist>linuxkpi_haiku.o
+	libfreebsd_network.a ;
+LINUXKPI_WLAN_LIBS = <nogrist>linuxkpi_wlan.o <nogrist>linuxkpi.o
+	<nogrist>linuxkpi_haiku.o
 	freebsd_wlan.a libfreebsd_network.a ;

@@ -87,5 +87,28 @@ for s in $(cat "$OUT/undefined.txt"); do
 	fi
 done
 echo "new kernel imports (verified in Haiku source): $(wc -l < "$OUT/new-imports.txt") -> $OUT/new-imports.txt"
+# Phase 3: mimic Haiku's LinkAgainst (build/jam/MainBuildRules) on the
+# KernelAddon library list: a name without dirname/grist that neither starts
+# with "lib" nor ends in .a/.so becomes "-l<name>" and fails to link.
+libs=$(awk '/^KernelAddon /{a=1} a{print} a&&/;/{exit}' "$DRV/Jamfile" |
+	awk 'BEGIN{RS=":"} NR==3' | tr -s ' \t\n;' '\n')
+rules=$REPO/haiku/src/libs/compat/linuxkpi/LinuxKPIRules
+badlibs=0
+for l in $libs; do
+	case $l in
+	'$(LINUXKPI_LIBS)')
+		set -- $(awk '/^LINUXKPI_LIBS =/{a=1} a{print} a&&/;/{exit}' "$rules" |
+			sed 's/^LINUXKPI_LIBS =//;s/;//') ;;
+	*) set -- "$l" ;;
+	esac
+	for x; do
+		case $x in
+		\<*\>*|*/*|lib*|*.a|*.so) ;;
+		*) echo "LinkAgainst would pass -l$x (use <nogrist>$x)"
+		   badlibs=$((badlibs + 1)) ;;
+		esac
+	done
+done
+echo "KernelAddon libraries jam would turn into -l: $badlibs"
 echo "unresolved: $unresolved"
-exit $unresolved
+exit $((unresolved + badlibs))
