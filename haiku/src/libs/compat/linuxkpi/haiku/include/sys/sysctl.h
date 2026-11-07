@@ -118,14 +118,50 @@ TAILQ_HEAD(sysctl_ctx_list, sysctl_ctx_entry);
 /* A node is an (unregistered) oid so SYSCTL_CHILDREN(&sysctl__x_y) works. */
 #define SYSCTL_NODE(parent, nbr, name, access, handler, descr)	\
 	static struct sysctl_oid sysctl__##parent##_##name __attribute__((unused))
-#define SYSCTL_INT(parent, nbr, name, access, ptr, val, descr)	__lkpi_sysctl_unused(parent##_##name)
-#define SYSCTL_UINT(parent, nbr, name, access, ptr, val, descr)	__lkpi_sysctl_unused(parent##_##name)
-#define SYSCTL_LONG(parent, nbr, name, access, ptr, val, descr)	__lkpi_sysctl_unused(parent##_##name)
-#define SYSCTL_ULONG(parent, nbr, name, access, ptr, val, descr) __lkpi_sysctl_unused(parent##_##name)
-#define SYSCTL_U8(parent, nbr, name, access, ptr, val, descr)	__lkpi_sysctl_unused(parent##_##name)
-#define SYSCTL_U16(parent, nbr, name, access, ptr, val, descr)	__lkpi_sysctl_unused(parent##_##name)
-#define SYSCTL_S16(parent, nbr, name, access, ptr, val, descr)	__lkpi_sysctl_unused(parent##_##name)
-#define SYSCTL_BOOL(parent, nbr, name, access, ptr, val, descr)	__lkpi_sysctl_unused(parent##_##name)
+/*
+ * Tunables. FreeBSD reads CTLFLAG_TUN sysctls from the loader environment;
+ * Haiku has none, so each scalar SYSCTL_* records {name, address, size} in
+ * the __lkpi_tunable linker set and lkpi_tunables_fetch() (lkpi_sysinit.c)
+ * fills the CTLFLAG_TUN ones from the driver's settings file
+ * (~/config/settings/kernel/drivers/<driver>) before any SYSINIT runs.
+ * Keys use FreeBSD's dotted names: "compat.linuxkpi.80211.hw_crypto 1".
+ * The indirection through __LKPI_TUNABLE expands parent/name macros first
+ * (module_param passes LINUXKPI_PARAM_PARENT / LINUXKPI_PARAM_NAME(x)).
+ */
+#include <sys/linker_set.h>
+
+struct lkpi_tunable {
+	const char	*parent;	/* "_compat_linuxkpi_80211" */
+	const char	*name;		/* "hw_crypto" */
+	void		*ptr;		/* NULL: constant, not tunable */
+	unsigned int	access;
+	unsigned char	size;		/* bytes */
+	unsigned char	is_signed;
+};
+
+#define __LKPI_TUNABLE2(parent, name, access, ptr, sz, sgn)		\
+	static struct lkpi_tunable lkpi_tunable_##parent##_##name = {	\
+		#parent, #name, (void *)(ptr), (access), (sz), (sgn) };	\
+	DATA_SET(__lkpi_tunable, lkpi_tunable_##parent##_##name)
+#define __LKPI_TUNABLE(parent, name, access, ptr, sz, sgn)		\
+	__LKPI_TUNABLE2(parent, name, access, ptr, sz, sgn)
+
+#define SYSCTL_INT(parent, nbr, name, access, ptr, val, descr)	\
+	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(int), 1)
+#define SYSCTL_UINT(parent, nbr, name, access, ptr, val, descr)	\
+	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(unsigned int), 0)
+#define SYSCTL_LONG(parent, nbr, name, access, ptr, val, descr)	\
+	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(long), 1)
+#define SYSCTL_ULONG(parent, nbr, name, access, ptr, val, descr) \
+	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(unsigned long), 0)
+#define SYSCTL_U8(parent, nbr, name, access, ptr, val, descr)	\
+	__LKPI_TUNABLE(parent, name, access, ptr, 1, 0)
+#define SYSCTL_U16(parent, nbr, name, access, ptr, val, descr)	\
+	__LKPI_TUNABLE(parent, name, access, ptr, 2, 0)
+#define SYSCTL_S16(parent, nbr, name, access, ptr, val, descr)	\
+	__LKPI_TUNABLE(parent, name, access, ptr, 2, 1)
+#define SYSCTL_BOOL(parent, nbr, name, access, ptr, val, descr)	\
+	__LKPI_TUNABLE(parent, name, access, ptr, sizeof(bool), 0)
 #define SYSCTL_STRING(parent, nbr, name, access, arg, len, descr) __lkpi_sysctl_unused(parent##_##name)
 #define SYSCTL_COUNTER_U64(parent, nbr, name, access, ptr, descr) __lkpi_sysctl_unused(parent##_##name)
 #define SYSCTL_PROC(parent, nbr, name, access, ptr, arg, handler, fmt, descr) __lkpi_sysctl_unused(parent##_##name)

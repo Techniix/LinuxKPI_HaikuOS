@@ -238,3 +238,40 @@ are stages (d) and (e) and may not work yet.
 
 If it says `no wireless device registered within 20 s`, the firmware was not
 found or did not start; the lines before it say which.
+
+## Tunables and speed diagnostics
+
+FreeBSD's LinuxKPI has boot-time tunables (`CTLFLAG_TUN` sysctls such as
+`compat.linuxkpi.80211.hw_crypto`). On Haiku they are read from the driver's
+settings file, one `key value` per line, before the driver attaches:
+
+```sh
+mkdir -p ~/config/settings/kernel/drivers
+cat > ~/config/settings/kernel/drivers/mt7921e <<'X'
+compat.linuxkpi.80211.hw_crypto 1
+X
+```
+
+Values: a number, or `true`/`false` (`yes`/`no`, `on`/`off`). Every tunable
+that was applied is logged as `linuxkpi: tunable <key> = <value>`. To undo,
+delete the line (or the file) and reboot. If a setting stops the machine
+from booting, boot with "Disable user add-ons" and remove the file.
+
+Useful keys:
+
+| Key | Default | Effect |
+|---|---|---|
+| `compat.linuxkpi.80211.hw_crypto` | 0 | Let the card do CCMP encryption/decryption. Off means net80211 does it in software, one frame at a time, on the CPU. |
+| `compat.linuxkpi.80211.debug` | 0 | LinuxKPI 802.11 debug bitmask (only in builds with `LINUXKPI_DEBUG_80211`). |
+| `compat.linuxkpi.mt7921_pci_disable_aspm` | 0 | mt7921e: turn off PCIe power saving (ASPM). |
+| `compat.linuxkpi.mt7921_disable_clc` | 0 | mt7921e: ignore the firmware's country-location table. |
+
+The DMA layer logs a summary every 262,144 copies made because a buffer is
+above the card's 32-bit DMA limit:
+
+```
+lkpi_dma: <bounces> bounces, <misses> pool misses, <maps> maps total
+```
+
+`bounces` close to `maps` means nearly every transfer is copied; any `pool
+misses` mean the 512-slot pool ran out and fell back to a slower allocation.

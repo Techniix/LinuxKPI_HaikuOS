@@ -106,7 +106,8 @@ for s in $(cat "$OUT/undefined.txt"); do
 	esac
 	where=$(grep -rlE "(^|[ *])$name[ ]*\(|^$name$|std::$name" \
 		"$H/src/system/kernel" "$H/src/system/libroot/posix/string" \
-		"$H/src/system/libroot/posix/musl/string" 2>/dev/null | head -1)
+		"$H/src/system/libroot/posix/musl/string" \
+		"$H/src/system/libroot/os/driver_settings.cpp" 2>/dev/null | head -1)
 	if [ -z "$where" ]; then
 		echo "NOT FOUND in Haiku kernel: $s"
 		unresolved=$((unresolved + 1))

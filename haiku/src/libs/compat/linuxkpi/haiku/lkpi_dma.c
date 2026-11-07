@@ -127,6 +127,7 @@ lkpi_bounce_pool_put(struct linux_dma_priv *priv, int slot)
 	priv->pool_free[priv->pool_nfree++] = slot;
 }
 
+static u_int lkpi_dma_bounces, lkpi_dma_pool_misses, lkpi_dma_maps;
 static u_int lkpi_dma_bounce_logged;
 
 static inline u_int
@@ -254,6 +255,7 @@ lkpi_dma_map_phys(struct device *dev, vm_paddr_t phys, size_t len,
 
 	if (priv == NULL || len == 0)
 		return (0);
+	atomic_add_int(&lkpi_dma_maps, 1);
 	/* Identity mapping: bus address == physical address (no IOMMU). */
 	if (phys + len - 1 <= priv->dma_mask)
 		return (phys);
@@ -289,6 +291,18 @@ lkpi_dma_map_phys(struct device *dev, vm_paddr_t phys, size_t len,
 		dev_info(dev, "lkpi_dma: bouncing %#llx+%zu above DMA mask %#llx "
 		    "(logged once)\n", (unsigned long long)phys, len,
 		    (unsigned long long)priv->dma_mask);
+	/* Speed diagnostics: how often we copy, and how often the pool is
+	 * exhausted (each miss is a contigmalloc(), i.e. a new area). */
+	{
+		u_int nb = atomic_fetchadd_int(&lkpi_dma_bounces, 1) + 1;
+
+		if (b->slot < 0)
+			atomic_add_int(&lkpi_dma_pool_misses, 1);
+		if ((nb & 0x3ffff) == 0)
+			dev_info(dev, "lkpi_dma: %u bounces, %u pool misses, "
+			    "%u maps total\n", nb, lkpi_dma_pool_misses,
+			    lkpi_dma_maps);
+	}
 
 	if ((attrs & DMA_ATTR_SKIP_CPU_SYNC) == 0 &&
 	    lkpi_dma_to_device(direction))
