@@ -72,4 +72,43 @@ struct thread *lkpi_sx_xholder(struct sx *);
 #define sx_has_waiters(sx)		(0)
 #define sx_assert(sx, what)		do { } while (0)
 
+/*
+ * SX_SYSINIT / SX_SYSINIT_FLAGS (FreeBSD sys/sx.h): a statically declared
+ * lock initialised by a SYSINIT at SI_SUB_LOCK, before any module_init().
+ * Linux's DEFINE_MUTEX() expands to this in linux/mutex.h.
+ */
+#include <sys/kernel.h>
+
+struct sx_args {
+	struct sx	*sa_sx;
+	const char	*sa_desc;
+	int		sa_flags;
+};
+
+static inline void
+lkpi_sx_sysinit(void *arg)
+{
+	struct sx_args *sargs = (struct sx_args *)arg;
+
+	lkpi_sx_init_flags(sargs->sa_sx, sargs->sa_desc, sargs->sa_flags);
+}
+
+static inline void
+lkpi_sx_sysuninit(void *arg)
+{
+	lkpi_sx_destroy((struct sx *)arg);
+}
+
+#define SX_SYSINIT_FLAGS(name, sxa, desc, flags)			\
+	static struct sx_args name##_args = {				\
+		(sxa),							\
+		(desc),							\
+		(flags)							\
+	};								\
+	SYSINIT(name##_sx_sysinit, SI_SUB_LOCK, SI_ORDER_MIDDLE,	\
+	    lkpi_sx_sysinit, &name##_args);				\
+	SYSUNINIT(name##_sx_sysuninit, SI_SUB_LOCK, SI_ORDER_MIDDLE,	\
+	    lkpi_sx_sysuninit, (sxa))
+#define SX_SYSINIT(name, sxa, desc)	SX_SYSINIT_FLAGS(name, sxa, desc, 0)
+
 #endif

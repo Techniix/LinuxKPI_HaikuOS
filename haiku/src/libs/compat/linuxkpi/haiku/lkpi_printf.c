@@ -27,6 +27,8 @@
 
 #include <KernelExport.h>
 
+extern const char *gDriverName;	/* freebsd_network compat/sys/haiku-module.h */
+
 /* Returns fmt itself, or buf holding a rewritten copy. */
 static const char *
 lkpi_fmt_fix(const char *fmt, char *buf, size_t size)
@@ -121,6 +123,12 @@ lkpi_device_printf(device_t dev, const char *fmt, ...)
 	va_start(ap, fmt);
 	r = lkpi_vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
-	device_printf(dev, "%s", buf);
+	/* Linux devices without a FreeBSD device_t (USB interfaces, HCI
+	 * devices, ...) reach here via dev_err(dev) -> (dev)->bsddev == NULL;
+	 * Haiku's device_printf() dereferences its argument. */
+	if (dev == NULL)
+		dprintf("%s: %s", gDriverName, buf);
+	else
+		device_printf(dev, "%s", buf);
 	return (r);
 }

@@ -7,7 +7,8 @@
 # Usage: HAIKU_TOP=... tools/link-check.sh [driver-dir]
 #   driver-dir defaults to haiku/src/add-ons/kernel/drivers/network/lkpi_pcitest
 #   A driver with more than one Linux merge object, or that needs LinuxKPI
-#   802.11, is described by tools/drivers/<name>.sh (see mt7921e.sh).
+#   802.11, USB or Bluetooth, is described by tools/drivers/<name>.sh (see
+#   mt7921e.sh, bt-foundation.sh). Such a script may set GLUE_PROFILE.
 set -eu
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 H=${HAIKU_TOP:?}
@@ -33,7 +34,7 @@ build() {	# profile objname srcs...
 	OUT=$OUT/$obj.d "$REPO/tools/check-module.sh" -p "$prof" "$@" >"$OUT/$obj.log" 2>&1 || {
 		cat "$OUT/$obj.log"; echo "link-check: compile failed for $obj"; exit 1; }
 	ld -r -o "$OUT/$obj" "$OUT/$obj.d"/*.o
-	unset DRIVER_FLAGS
+	unset DRIVER_FLAGS EXTRA_FLAGS
 	echo "built $obj ($# sources)"
 }
 
@@ -69,7 +70,7 @@ if [ "$WLAN" = 1 ]; then
 	build wlan glue.o "$DRV/glue.c"
 	WLAN_OBJS="linuxkpi_wlan.o freebsd_wlan.o"
 else
-	build fbsd glue.o "$DRV/glue.c"
+	build "${GLUE_PROFILE:-fbsd}" glue.o "$DRV/glue.c"
 	WLAN_OBJS=
 fi
 
@@ -97,6 +98,14 @@ unresolved=0
 : > "$OUT/new-imports.txt"
 for s in $(cat "$OUT/undefined.txt"); do
 	case $s in __start_set_*|__stop_set_*) continue ;; esac
+	# freebsd_network's hooks into the driver (haiku-module.h macros:
+	# HAIKU_FIRMWARE_*, NO_HAIKU_FBSD_MII_DRIVER, ...): the glue must
+	# define them, the kernel does not
+	case $s in __haiku_*)
+		echo "NOT DEFINED (driver glue must provide): $s"
+		unresolved=$((unresolved + 1))
+		continue ;;
+	esac
 	grep -qx -- "$s" "$OUT/haiku-uses.txt" && continue
 	case $s in
 	# C++ ABI support: the kernel links libsupc++ (KernelLd) and exports all
@@ -140,7 +149,7 @@ rules=$REPO/haiku/src/libs/compat/linuxkpi/LinuxKPIRules
 badlibs=0
 for l in $libs; do
 	case $l in
-	'$(LINUXKPI_LIBS)'|'$(LINUXKPI_WLAN_LIBS)')
+	'$(LINUXKPI_LIBS)'|'$(LINUXKPI_WLAN_LIBS)'|'$(LINUXKPI_BT_LIBS)')
 		v=${l#??}; v=${v%?}
 		set -- $(awk -v v="$v" '$1==v && $2=="="{a=1} a{print} a&&/;/{exit}' "$rules" |
 			sed "s/^$v =//;s/;//") ;;

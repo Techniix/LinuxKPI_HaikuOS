@@ -1,6 +1,6 @@
 # Status
 
-Last updated 2026-11-06. Haiku @ `b9fdc8a9e699`, FreeBSD @ `b556d9c9ce94`.
+Last updated 2026-11-08. Haiku @ `b9fdc8a9e699`, FreeBSD @ `b556d9c9ce94`.
 
 ## Stages
 
@@ -13,6 +13,7 @@ Last updated 2026-11-06. Haiku @ `b9fdc8a9e699`, FreeBSD @ `b556d9c9ce94`.
 | e | WPA2 association, DHCP, traffic | **[V] First pass 2026-11-07**: WPA2-PSK/CCMP association (802.11n, HT40), DHCP lease, RX/TX packets. Open: A-MPDU TX session setup fails (`ieee80211_ampdu_request returned 0 != 1`), 1 TX error. **Wi-Fi-only traffic verified** (Ethernet unplugged: ping to gateway and internet 0% loss, ~9-25 ms; web browsing, including this project's chat session) |
 | f | Suspend/resume, stability, upstreaming | Not started |
 | speed | Throughput tuning | 2026-11-07 [V]: A-MPDU TX setup fixed (patch 0006). Results depend on which mesh radio is joined: `…:e9:3e` ~617 down / ~43 up Mbps, `…:e9:3f` ~19 down / ~110 up (consistent over 3 runs). Ping 2 ms to gateway, 20 ms to 1.1.1.1. DMA bounces only ~6.5% of maps, 0 pool misses, so the copy is not the bottleneck. Next: Test B (`compat.linuxkpi.80211.hw_crypto 1`): with software crypto, LinuxKPI clears net80211's RX A-MPDU flag (`linux_80211.c:4533`) [H: cause of the per-band asymmetry] |
+| bt | Bluetooth: LinuxKPI USB + LinuxKPI Bluetooth (HCI core) on Haiku's stack | 2026-11-08: foundation written; compiles; links with 0 unresolved (`tools/link-check.sh tools/drivers/bt-foundation`, with imported `btmtk.c` unchanged). Driver add-on waits on the license choice (docs/BLUETOOTH.md). **Not yet built with jam or run** |
 | mgmt | LinuxKPI Manager, `lkpictl`, read-only kernel status interface | Written 2026-11-07; kernel side links (`link-check.sh`), userland passes a syntax check against Haiku headers; **not yet built or run on Haiku** (docs/MANAGER.md) |
 
 ## Verification so far

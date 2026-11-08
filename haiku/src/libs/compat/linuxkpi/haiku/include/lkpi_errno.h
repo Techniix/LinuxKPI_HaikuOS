@@ -38,6 +38,13 @@
 #undef ERELOOKUP
 #define ERELOOKUP	(-5)
 
+/* Linux errnos missing from this FreeBSD import's linux/errno.h, with
+ * Linux's values (none collide with FreeBSD's 1..97 or linux/errno.h's
+ * additions). Guarded: a newer FreeBSD import may define them itself. */
+#ifndef EREMOTEIO
+#define EREMOTEIO	121	/* Remote I/O error (USB short transfer) */
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

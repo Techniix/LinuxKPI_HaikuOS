@@ -9,6 +9,11 @@
 #             wlan      — freebsd_wlan/net80211 (FBSD_DRIVER=1)
 #             linuxkpi  — LinuxKPI core (fbsd + linuxkpi include paths)
 #             lkpi_wlan — LinuxKPI 802.11 + net80211
+#             usb       — LinuxKPI USB (linuxkpi_usb/include ahead of common)
+#             usb_shim  — Haiku side of LinuxKPI USB (no preinclude)
+#             bt        — LinuxKPI Bluetooth (linuxkpi_bt + usb includes)
+#             bt_shim   — Haiku side of LinuxKPI Bluetooth (no preinclude)
+#             hk        — Haiku-only kernel code (linuxkpi_usb/haiku, linuxkpi_bt/haiku)
 #             driver    — imported Linux driver (mt76)
 # Flags are copied from build/jam/ArchitectureRules (HAIKU_KERNEL_*),
 # src/libs/compat/freebsd_network/Jamfile and the wlan driver Jamfiles.
@@ -52,6 +57,8 @@ FBSD="-I$C/freebsd_network/compat -I$C/freebsd_network -I$C/freebsd_wlan -D_KERN
  -Wno-unused -Wno-sign-compare -Wno-error=incompatible-pointer-types -Wno-multichar"
 LK=$REPO/haiku/src/libs/compat/linuxkpi
 LKW=$REPO/haiku/src/libs/compat/linuxkpi_wlan
+LKU=$REPO/haiku/src/libs/compat/linuxkpi_usb
+LKB=$REPO/haiku/src/libs/compat/linuxkpi_bt
 LKINC="-Wno-pointer-sign -Werror=implicit-function-declaration -Werror=int-conversion -Werror=incompatible-pointer-types -I$LK/haiku/include -I$LK/freebsd/include -I$LK/freebsd/ck/include -I$LK/common/include -I$LK/dummy/include -I$LK/haiku -I$REPO/haiku/src/libs -include $LK/haiku/lkpi_haiku_preinclude.h"
 
 case $PROFILE in
@@ -60,6 +67,11 @@ case $PROFILE in
 	wlan)      PFLAGS="-I$C/freebsd_wlan/net80211 $FBSD -DFBSD_DRIVER=1 -Wno-format -Wno-uninitialized" ;;
 	linuxkpi)  PFLAGS="$LKINC $FBSD -I$C/freebsd_wlan -DFBSD_DRIVER=1 " ;;
 	lkpi_wlan) PFLAGS="$LKINC $FBSD -I$C/freebsd_wlan -I$LKW -DFBSD_DRIVER=1 -idirafter $C/freebsd_wlan/net80211" ;;
+	usb)       PFLAGS="-I$LKU/include $LKINC $FBSD -I$LKU -DFBSD_DRIVER=1" ;;
+	usb_shim)  PFLAGS="-I$LK/haiku/include -I$LK/freebsd/include -I$LK/haiku $FBSD -I$C/freebsd_network -I$LKU" ;;	# linuxkpi_usb/haiku
+	bt)        PFLAGS="-I$LKB/include -I$LKU/include $LKINC $FBSD -I$LKB -I$LKU -DFBSD_DRIVER=1" ;;
+	bt_shim)   PFLAGS="-I$LK/haiku/include -I$LK/freebsd/include -I$LK/haiku $FBSD -I$C/freebsd_network -I$LKB" ;;	# linuxkpi_bt/haiku
+	hk)        PFLAGS="-D_KERNEL=1 -I$LK/haiku -I$LKU -I$LKB -I$H/headers/private/bluetooth" ;;	# */haiku Jamfiles of usb/bt
 	driver)    PFLAGS="$LKINC $FBSD -I$C/freebsd_wlan -DFBSD_DRIVER=1 -DLINUXKPI_VERSION=70000 ${DRIVER_FLAGS:-}" ;;
 	*) echo "unknown profile $PROFILE" >&2; exit 2 ;;
 esac

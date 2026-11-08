@@ -62,3 +62,5 @@ KernelMergeObject linuxkpi.o :
 
 SubInclude HAIKU_TOP src libs compat linuxkpi haiku ;
 SubInclude HAIKU_TOP src libs compat linuxkpi_wlan ;
+SubInclude HAIKU_TOP src libs compat linuxkpi_usb ;
+SubInclude HAIKU_TOP src libs compat linuxkpi_bt ;

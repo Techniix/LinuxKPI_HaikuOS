@@ -30,6 +30,8 @@ done
 
 # Directories that exist only because of this project (never Haiku's own).
 OWNED="src/libs/compat/linuxkpi src/libs/compat/linuxkpi_wlan
+	src/libs/compat/linuxkpi_usb src/libs/compat/linuxkpi_bt
+	src/add-ons/kernel/drivers/bluetooth/linuxkpi
 	src/add-ons/kernel/drivers/network/lkpi_pcitest
 	src/add-ons/kernel/drivers/network/wlan/mt7921e
 	src/apps/linuxkpimanager src/bin/lkpictl

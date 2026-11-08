@@ -5,18 +5,34 @@
 # Include from a Jamfile with:
 #   include [ FDirName $(HAIKU_TOP) src libs compat linuxkpi LinuxKPIRules ] ;
 #
-# Keep in sync with the "linuxkpi"/"driver" profiles of tools/check-module.sh.
+# Keep in sync with the profiles of tools/check-module.sh.
 
 rule UseLinuxKPI
 {
-	# UseLinuxKPI [ <LINUXKPI_VERSION> ] ;
+	# UseLinuxKPI [ <LINUXKPI_VERSION> ] [ : <subsystems> ] ;
 	#
 	# Sets up the current SubDir to compile LinuxKPI code (no version) or a
 	# Linux driver (pass the LINUXKPI_VERSION FreeBSD uses for that driver,
-	# e.g. 70000 for mt76). Order matters: Haiku overlays first, then
+	# e.g. 70000 for mt76). Order matters: subsystem headers first (they
+	# replace FreeBSD's, e.g. linux/usb.h), then Haiku overlays, then
 	# verbatim FreeBSD headers, then LinuxKPI's own, then freebsd_network.
+	#
+	# <subsystems>: LinuxKPI subsystems written for Haiku whose headers the
+	# code uses: usb (linuxkpi_usb), bt (linuxkpi_bt; implies usb).
 
 	local lkpi = [ FDirName $(HAIKU_TOP) src libs compat linuxkpi ] ;
+	local subsystems = $(2) ;
+	if bt in $(subsystems) && ! ( usb in $(subsystems) ) {
+		subsystems += usb ;
+	}
+	if bt in $(subsystems) {
+		UseHeaders [ FDirName $(HAIKU_TOP) src libs compat linuxkpi_bt
+			include ] : true ;
+	}
+	if usb in $(subsystems) {
+		UseHeaders [ FDirName $(HAIKU_TOP) src libs compat linuxkpi_usb
+			include ] : true ;
+	}
 
 	UseHeaders [ FDirName $(lkpi) haiku include ] : true ;
 	UseHeaders [ FDirName $(lkpi) freebsd include ] : true ;
@@ -60,3 +76,9 @@ LINUXKPI_LIBS = <nogrist>linuxkpi.o <nogrist>linuxkpi_haiku.o
 LINUXKPI_WLAN_LIBS = <nogrist>linuxkpi_wlan.o <nogrist>linuxkpi.o
 	<nogrist>linuxkpi_haiku.o
 	freebsd_wlan.a libfreebsd_network.a ;
+# Bluetooth controller drivers (USB transport): Linux HCI core and USB core
+# on Haiku's Bluetooth stack and USB bus manager (docs/BLUETOOTH.md).
+LINUXKPI_BT_LIBS = <nogrist>linuxkpi_bt.o <nogrist>linuxkpi_bt_haiku.o
+	<nogrist>linuxkpi_usb.o <nogrist>linuxkpi_usb_haiku.o
+	<nogrist>linuxkpi.o <nogrist>linuxkpi_haiku.o
+	libfreebsd_network.a ;

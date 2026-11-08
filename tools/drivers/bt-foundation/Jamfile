@@ -1,0 +1,7 @@
+# Not a real Jamfile: tools/link-check.sh reads the KernelAddon library list
+# of a driver directory; this is what a LinuxKPI Bluetooth add-on links.
+KernelAddon lkpi_bt_foundation :
+	glue.c
+	:
+	$(LINUXKPI_BT_LIBS)
+	;

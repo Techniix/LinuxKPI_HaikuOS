@@ -64,6 +64,9 @@ Every LinuxKPI unit is compiled with `-include lkpi_haiku_preinclude.h`, which:
 | kthreads | `kthread_add`/`sched_add`/`sched_prio` routed to versions that use LinuxKPI thread records (freebsd_network casts thread ids to `struct thread *`) | `lkpi_thread.cpp`, `lkpi_haiku_wrap.h` |
 | `sema(9)` | counter + `mtx` + `cv` | `lkpi_sema.c` |
 | 802.11 attach | wait (Giant released) until mac80211 registration created the net80211 device, so freebsd_wlan's `start_wlan()` finds it | `linuxkpi_wlan/haiku/lkpi_wlan_haiku.c` |
+| USB (`linux/usb.h`) | Haiku USB bus manager v3 (`<USB3.h>`); own MIT implementation, FreeBSD's `linux_usb.c` not used | `linuxkpi_usb/` (docs/BLUETOOTH.md) |
+| Bluetooth HCI core (`net/bluetooth/hci_core.h`) | Haiku's `bluetooth/hci/v1` module and `bluetooth_server` | `linuxkpi_bt/` (docs/BLUETOOTH.md) |
+| non-network add-ons (entry points, device nodes) | legacy driver hooks + `devfs_rescan_driver()` | `lkpi_driver.c`, `lkpi_devfs.c` |
 
 ## Wi-Fi drivers (stage c+)
 

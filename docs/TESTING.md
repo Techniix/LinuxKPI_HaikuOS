@@ -397,3 +397,30 @@ Counters that grow during a slow download name the cause: `wlan.rx_dup`
 (frames thrown away as duplicates), `wlan.rx_ccmpreplay` (replay check),
 `wlan.rx_decryptcrc`/`rx_ccmpmic` (decryption), `wlan.amsdu_*`
 (A-MSDU unpacking), `wlan.ampdu_rx_*` (reordering), `wlan.ierrors`.
+
+# Bluetooth (preparation)
+
+Nothing to install yet: the driver add-on follows once the driver choice in
+[BLUETOOTH.md](BLUETOOTH.md) is made. Two things help now:
+
+1. **Identify the controller.** In Terminal:
+
+   ```
+   listusb -v > ~/Desktop/bt-listusb.txt
+   ```
+
+   Send the file. The Bluetooth part of a MediaTek combo card shows up as a
+   USB device with class `e0` (Wireless), often vendor `0e8d` (MediaTek) or
+   the laptop maker's ID.
+
+2. **See what Haiku does with it today.** After a fresh boot:
+
+   ```
+   ls -lR /dev/bluetooth > ~/Desktop/bt-dev.txt
+   ls -l /boot/system/add-ons/kernel/drivers/dev/bluetooth/h2/ >> ~/Desktop/bt-dev.txt
+   grep -i -E "h2generic|bluetooth" /var/log/syslog > ~/Desktop/bt-syslog.txt
+   ```
+
+   Send both files. They show whether `h2generic` claims the controller and
+   where its driver links live (needed for the blocking step in
+   BLUETOOTH.md).

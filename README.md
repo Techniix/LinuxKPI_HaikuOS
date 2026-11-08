@@ -6,6 +6,8 @@ A LinuxKPI layer for [Haiku](https://www.haiku-os.org/), modelled on FreeBSD's
 on Haiku with minimal changes to Haiku itself.
 
 - **First target:** MediaTek MT7921 Wi-Fi (`mt7921e`, Linux mt76) on x86-64 real hardware.
+- **In progress:** Bluetooth controllers through LinuxKPI USB and a Linux HCI
+  core on Haiku's own Bluetooth stack ([docs/BLUETOOTH.md](docs/BLUETOOTH.md)).
 - **Later:** DRM/KMS, connecting to the separate Renguin project.
 
 > **Status:** stage (a) — the LinuxKPI core plus a PCI test driver — compiles
@@ -23,7 +25,13 @@ haiku/src/libs/compat/linuxkpi/
   Jamfile                  linuxkpi.o (KernelMergeObject)
   common/                  FreeBSD LinuxKPI, verbatim (see IMPORTED.md)
   freebsd/                 other verbatim FreeBSD code (ConcurrencyKit, crc32, sys/tree.h)
-  haiku/                   Haiku shims, overlay headers, generated files
+  haiku/                   Haiku shims, overlay headers, generated files,
+                           entry points for non-network add-ons (lkpi_driver.h)
+haiku/src/libs/compat/linuxkpi_wlan/   LinuxKPI 802.11 (mac80211 -> net80211)
+haiku/src/libs/compat/linuxkpi_usb/    LinuxKPI USB (Linux USB API on Haiku's USB stack)
+haiku/src/libs/compat/linuxkpi_bt/     LinuxKPI Bluetooth (Linux HCI core on Haiku's stack)
+haiku/src/add-ons/kernel/drivers/bluetooth/linuxkpi/imported/
+                           imported Linux Bluetooth driver files (PROVENANCE.md)
 haiku/src/add-ons/kernel/drivers/network/lkpi_pcitest/
                            stage (a)/(b) PCI test driver
 patches/haiku/             small patches to Haiku itself (BASE_COMMIT)
@@ -51,6 +59,7 @@ Then follow [docs/TESTING.md](docs/TESTING.md) for installing and testing on har
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the layers fit together
 - [docs/STATUS.md](docs/STATUS.md) — what works, what doesn't, staged plan
 - [docs/TESTING.md](docs/TESTING.md) — exact test and recovery steps
+- [docs/BLUETOOTH.md](docs/BLUETOOTH.md) — Bluetooth design, licensing choice, status
 - [docs/RESEARCH.md](docs/RESEARCH.md) — Phase 1 report plus Phase 2 addendum
 
 Claims in the docs are marked **[V]** verified in source, **[H]** hypothesis,
