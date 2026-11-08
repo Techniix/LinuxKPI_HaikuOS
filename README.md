@@ -60,6 +60,7 @@ Then follow [docs/TESTING.md](docs/TESTING.md) for installing and testing on har
 - [docs/STATUS.md](docs/STATUS.md) — what works, what doesn't, staged plan
 - [docs/TESTING.md](docs/TESTING.md) — exact test and recovery steps
 - [docs/BLUETOOTH.md](docs/BLUETOOTH.md) — Bluetooth design, licensing choice, status
+- [docs/CONVENTIONS.md](docs/CONVENTIONS.md) — how commits and code comments are written; upstreaming rules
 - [docs/RESEARCH.md](docs/RESEARCH.md) — Phase 1 report plus Phase 2 addendum
 
 Claims in the docs are marked **[V]** verified in source, **[H]** hypothesis,
