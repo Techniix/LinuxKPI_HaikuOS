@@ -1,0 +1,63 @@
+diff --git a/src/libs/compat/freebsd_network/compat/sys/_mutex.h b/src/libs/compat/freebsd_network/compat/sys/_mutex.h
+index 62fc0c03..928982de 100644
+--- a/src/libs/compat/freebsd_network/compat/sys/_mutex.h
++++ b/src/libs/compat/freebsd_network/compat/sys/_mutex.h
+@@ -22,6 +22,9 @@ struct mtx {
+ 		struct {
+ 			spinlock		lock;
+ 			cpu_status		state;
++			thread_id		owner;
++				// the holder, for mtx_owned(); the union's size is
++				// set by the larger members, so this adds nothing
+ 		}					spinlock_;
+ 	} u;
+ };
+diff --git a/src/libs/compat/freebsd_network/compat/sys/mutex.h b/src/libs/compat/freebsd_network/compat/sys/mutex.h
+index 425f816c..9cab4ec4 100644
+--- a/src/libs/compat/freebsd_network/compat/sys/mutex.h
++++ b/src/libs/compat/freebsd_network/compat/sys/mutex.h
+@@ -113,8 +113,14 @@ mtx_owned(struct mtx* mutex)
+ 		return mutex->u.recursive.holder == find_thread(NULL);
+ #endif
+ 	}
+-	if (mutex->type == MTX_SPIN)
+-		return mutex->u.spinlock_.lock.lock != 0;
++	if (mutex->type == MTX_SPIN) {
++		// Owned by the calling thread, as FreeBSD's mtx_owned() means:
++		// "locked at all" made mtx_assert(MA_NOTOWNED) panic whenever
++		// another CPU held the lock at that moment (seen with two CPUs in
++		// a taskqueue thread starting while the queue was being used).
++		return B_SPINLOCK_IS_LOCKED(&mutex->u.spinlock_.lock)
++			&& mutex->u.spinlock_.owner == find_thread(NULL);
++	}
+ 
+ 	return 0;
+ }
+diff --git a/src/libs/compat/freebsd_network/mutex.c b/src/libs/compat/freebsd_network/mutex.c
+index cf631e77..edd9b3b5 100644
+--- a/src/libs/compat/freebsd_network/mutex.c
++++ b/src/libs/compat/freebsd_network/mutex.c
+@@ -25,6 +25,7 @@ mtx_init(struct mtx *mutex, const char *name, const char *type,
+ 		mutex->type = MTX_RECURSE;
+ 	} else if ((options & MTX_SPIN) != 0) {
+ 		B_INITIALIZE_SPINLOCK(&mutex->u.spinlock_.lock);
++		mutex->u.spinlock_.owner = -1;
+ 		mutex->type = MTX_SPIN;
+ 	} else {
+ 		mutex_init_etc(&mutex->u.mutex_.lock, name, MUTEX_FLAG_CLONE_NAME);
+@@ -65,6 +66,7 @@ mtx_lock_spin(struct mtx* mutex)
+ 	cpu_status status = disable_interrupts();
+ 	acquire_spinlock(&mutex->u.spinlock_.lock);
+ 	mutex->u.spinlock_.state = status;
++	mutex->u.spinlock_.owner = find_thread(NULL);
+ }
+ 
+ 
+@@ -74,6 +76,7 @@ mtx_unlock_spin(struct mtx* mutex)
+ 	KASSERT(mutex->type == MTX_SPIN, ("not a spin mutex"));
+ 
+ 	cpu_status status = mutex->u.spinlock_.state;
++	mutex->u.spinlock_.owner = -1;
+ 	release_spinlock(&mutex->u.spinlock_.lock);
+ 	restore_interrupts(status);
+ }
