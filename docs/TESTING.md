@@ -1,5 +1,17 @@
 # Testing on real hardware
 
+> **Renga:** Renga images already contain `mt7921e` and its firmware in
+> the system package, LinuxKPI Manager and `lkpictl`; nothing below has to
+> be built or installed there. A hand-installed (non-packaged) `mt7921e`
+> takes precedence over the packaged one, so move it aside to test
+> Renga's build. The regression check for the Renga build (scan, WPA2,
+> DHCP, traffic, speed, `lkpictl status`, the Manager) is in the Renga
+> hand-over `WIFI-HARDWARE-TEST.md`. To load a test driver again without a
+> reboot, change its binary's modification time (`touch
+> .../drivers/bin/lkpi_pcitest`): devfs reloads updated drivers none of
+> whose devices is open (Renga's linuxkpi harness test does this); the
+> old `rescan` tool's write to `/dev` is refused by current devfs.
+
 Target: x86-64 machine with a MediaTek MT7921 (PCI vendor `14c3`; the test
 driver matches devices `7961`, `0608`, `0616`, `7920`, `7922`).
 

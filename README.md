@@ -10,9 +10,20 @@ on Haiku with minimal changes to Haiku itself.
   core on Haiku's own Bluetooth stack ([docs/BLUETOOTH.md](docs/BLUETOOTH.md)).
 - **Later:** DRM/KMS, connecting to the separate Renguin project.
 
-> **Status:** stage (a) — the LinuxKPI core plus a PCI test driver — compiles
-> and link-checks with 0 unresolved symbols against Haiku. **It has not run
-> on hardware yet.** See [docs/STATUS.md](docs/STATUS.md).
+> **Status:** the `mt7921e` driver works on a real MT7922 (`14c3:0616`):
+> firmware boot, scan, WPA2-PSK/CCMP, DHCP and Wi-Fi-only traffic
+> (stages a-e, 2026-11-06/07). Bluetooth is written but not built. See
+> [docs/STATUS.md](docs/STATUS.md).
+>
+> **Renga:** since 2026-11-11 the Renga fork of Haiku
+> ([Techniix/haiku](https://github.com/Techniix/haiku), `ce/main`) carries
+> this code in its tree, built with the image (mt7921e and its firmware in
+> the system package, LinuxKPI Manager and `lkpictl` installed) and
+> tested in its QEMU harness against QEMU's `edu` device. This repository
+> stays the upstream for the LinuxKPI layer, the imported code and the
+> tools; `tools/sync-renga.sh` copies it into a Renga tree (see
+> "Renga integration" in [docs/STATUS.md](docs/STATUS.md)). For stock
+> Haiku, `tools/install.sh` works as before.
 
 ## Layout
 
@@ -35,7 +46,8 @@ haiku/src/add-ons/kernel/drivers/bluetooth/linuxkpi/imported/
 haiku/src/add-ons/kernel/drivers/network/lkpi_pcitest/
                            stage (a)/(b) PCI test driver
 patches/haiku/             small patches to Haiku itself (BASE_COMMIT)
-tools/                     import, generate, compile-check, link-check, install
+tools/                     import, generate, compile-check, link-check, install,
+                           sync-renga.sh (copy into a Renga tree)
 docs/                      architecture, status, testing, research report
 IMPORTED.md                provenance + license of every imported file (generated)
 ```

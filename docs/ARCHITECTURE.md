@@ -97,6 +97,12 @@ Kept in `patches/haiku/` against `BASE_COMMIT`:
 | 0006 | net80211 `ieee80211_ampdu_request()` returns 1 on success, as in FreeBSD (LinuxKPI 802.11 relies on it; Haiku's only other caller ignores the value) |
 | 0007 | freebsd_network: `gDriverControlHook`, a driver-private ioctl hook in `compat_control()` before `wlan_control()` (LinuxKPI's read-only status interface, docs/MANAGER.md) |
 | 0008 | build hooks for LinuxKPI Manager (`src/apps/linuxkpimanager`) and `lkpictl` (`src/bin/lkpictl`) |
+| 0009 | **upstream bug:** freebsd_network `mtx_owned()` of an `MTX_SPIN` mutex was "locked by anyone", so `mtx_assert(MA_NOTOWNED)` panicked when another CPU held the lock (seen with 2 CPUs: `tq_handle_thread` of a fast taskqueue, `fbsd_subr_taskqueue.c:535`); spin mutexes now record their holder |
+
+In Renga (Techniix/haiku `ce/main`) each of these is an ordinary commit
+instead of a patch (the hashes are in Renga's `RENGA_MASTER_ROADMAP.md`,
+entry F-26). `tools/sync-renga.sh --check` reports a patch that is not yet
+in a Renga tree.
 
 ## Generated files
 

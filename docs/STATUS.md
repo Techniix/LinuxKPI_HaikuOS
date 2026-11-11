@@ -1,6 +1,7 @@
 # Status
 
-Last updated 2026-11-08. Haiku @ `b9fdc8a9e699`, FreeBSD @ `b556d9c9ce94`.
+Last updated 2026-11-11. Haiku @ `b9fdc8a9e699`, FreeBSD @ `b556d9c9ce94`.
+Renga integration: see the last section.
 
 ## Stages
 
@@ -14,7 +15,7 @@ Last updated 2026-11-08. Haiku @ `b9fdc8a9e699`, FreeBSD @ `b556d9c9ce94`.
 | f | Suspend/resume, stability, upstreaming | Not started |
 | speed | Throughput tuning | 2026-11-07 [V]: A-MPDU TX setup fixed (patch 0006). Results depend on which mesh radio is joined: `…:e9:3e` ~617 down / ~43 up Mbps, `…:e9:3f` ~19 down / ~110 up (consistent over 3 runs). Ping 2 ms to gateway, 20 ms to 1.1.1.1. DMA bounces only ~6.5% of maps, 0 pool misses, so the copy is not the bottleneck. Next: Test B (`compat.linuxkpi.80211.hw_crypto 1`): with software crypto, LinuxKPI clears net80211's RX A-MPDU flag (`linux_80211.c:4533`) [H: cause of the per-band asymmetry] |
 | bt | Bluetooth: LinuxKPI USB + LinuxKPI Bluetooth (HCI core) on Haiku's stack | 2026-11-08: foundation written; compiles; links with 0 unresolved (`tools/link-check.sh tools/drivers/bt-foundation`, with imported `btmtk.c` unchanged). Driver add-on waits on the license choice (docs/BLUETOOTH.md). **Not yet built with jam or run** |
-| mgmt | LinuxKPI Manager, `lkpictl`, read-only kernel status interface | Written 2026-11-07; kernel side links (`link-check.sh`), userland passes a syntax check against Haiku headers; **not yet built or run on Haiku** (docs/MANAGER.md) |
+| mgmt | LinuxKPI Manager, `lkpictl`, read-only kernel status interface | Written 2026-11-07. **2026-11-11: built with jam in the Renga tree** (the Manager also needs `libtracker` for its save panel) **and run in Renga's QEMU harness** (renga-raw image): `lkpictl drivers/hardware/status/coverage/report`, the window, four tabs with screenshots; `status` of a running driver needs the hardware (no MediaTek device in QEMU). New: `LinuxKPIManager --tab <name>` |
 
 ## Verification so far
 
@@ -71,3 +72,45 @@ New kernel imports beyond freebsd_network's: `call_all_cpus_sync`,
   `B_URGENT_DISPLAY_PRIORITY`, not a real-time class.
 - Attach of a LinuxKPI 802.11 driver waits up to 20 s for the driver to
   register with mac80211 (needed by freebsd_wlan's `start_wlan()`).
+
+## Renga integration (2026-11-11)
+
+Renga ([Techniix/haiku](https://github.com/Techniix/haiku) `ce/main`)
+carries this repository's `haiku/` tree in-tree, at the same paths, built
+with the image. Decision and history: Renga `RENGA_MASTER_ROADMAP.md`,
+entries F-26 and F-34 and the decisions log.
+
+- **What Renga ships:** `mt7921e` in the system package with its
+  `dev/net` link (x86_64), the MT7920/MT7921/MT7922 firmware from
+  linux-firmware `69e51bb26f3f` in `system/data/firmware/mt7921e` (the
+  MT7922 files are byte-identical to the ones verified here), LinuxKPI
+  Manager in the Applications menu, `lkpictl` in `/bin`, `data/linuxkpi` in
+  the system data. `lkpi_pcitest` only goes into Renga's test images. The
+  Bluetooth driver directory is not copied (not built, licence pending).
+- **Patches:** 0001-0009 are Renga commits; Renga needs no patch step.
+  0009 is new (spin-mutex `mtx_owned()`, see ARCHITECTURE.md).
+- **Sync:** `tools/sync-renga.sh [--check] /path/to/renga` copies this
+  repository into a Renga tree (or lists the differences). Changes made in
+  Renga to files of this repository are sent back here in the same
+  session; at this commit the two copies are identical.
+- **QEMU coverage of the core:** `lkpi_pcitest` also matches QEMU's `edu`
+  educational device (`1234:11e8`) and then tests, through LinuxKPI only:
+  MMIO, MSI interrupts (raised on request, and on a computation's end),
+  coherent DMA, streaming DMA above the device's DMA mask (bounced, both
+  directions, plus `dma_sync_single_for_cpu()`), `timer_list`, delayed
+  work, `hrtimer` (each fired and cancelled), and LinuxKPI's own load-time
+  self-test, over four load/unload cycles with an area-leak check. Renga's
+  harness runs it on every boot path (`linuxkpi` suite; the device gets
+  `dma_mask=0xffffff` so every streaming buffer bounces). With two CPUs it
+  found the spin-mutex panic fixed by patch 0009.
+- **Not covered in QEMU:** LinuxKPI 802.11, mt76 and everything Wi-Fi (no
+  Wi-Fi device model), net_device/NAPI/skb paths (no Linux network driver
+  is run there), shared INTx.
+- **Reworks considered** (keep the verified hardware behaviour; details in
+  Renga's roadmap, F-26): none of the shims was replaced. LinuxKPI's
+  timers, work queues and tasklets run on freebsd_network callouts and
+  taskqueues and its sleeps on Haiku `ConditionVariable`s, not on DPCs, so
+  Renga's DPC fix does not touch them; the DMA layer needs nothing Renga's
+  kernel lacks (no IOMMU on Haiku); MSI and firmware loading use
+  freebsd_network as before (the firmware now also comes packaged).
+- **Next:** the regression check on the MT7922 with the Renga build.

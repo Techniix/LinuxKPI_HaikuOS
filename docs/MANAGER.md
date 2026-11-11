@@ -8,11 +8,14 @@ Claims are marked like the rest of the project: **[V]** verified in Haiku
 source (tree at `patches/haiku/BASE_COMMIT`) or on hardware, **[H]** a
 reasoned hypothesis, **[U]** unknown / still to check.
 
-Status (2026-11-07): design done; the kernel status interface, the shared
-library, `lkpictl` and a first version of the GUI are written. The userland
-code passes a syntax check against Haiku's headers, and the kernel side links
-in `tools/link-check.sh`. **None of it has been built with jam or run on
-Haiku yet.**
+Status (2026-11-11): built with jam in the Renga tree and run in Renga's
+QEMU harness (renga-raw): `lkpictl` commands, the window and its tabs
+(screenshots). Asking a running driver for its status (`lkpictl status`)
+has not run yet: QEMU has no device for mt7921e. The Manager links
+`libtracker` (BFilePanel). `LinuxKPIManager --tab <overview|drivers|
+hardware|diagnostics|log|compatibility>` opens at, or switches a running
+window to, that tab. On Renga the driver is packaged, so "Disable at boot"
+answers that packaged drivers cannot be switched there (roadmap phase 3).
 
 ## 1. Goals and non-goals
 
