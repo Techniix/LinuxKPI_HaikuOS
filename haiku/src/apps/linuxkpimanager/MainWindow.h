@@ -30,7 +30,11 @@ enum {
 	kMsgOpenSettings		= 'opst',
 	kMsgDiagSelected		= 'dgsl',
 	kMsgLogFilter			= 'lgfl',
-	kMsgSettingsChanged		= 'stch'
+	kMsgSettingsChanged		= 'stch',
+	kMsgSelectTab			= 'stab'
+		// "tab": string, the tab's name in English ("overview",
+		// "drivers", "hardware", "diagnostics", "log", "compatibility");
+		// sent by App for "--tab <name>" and usable by other programs
 };
 
 

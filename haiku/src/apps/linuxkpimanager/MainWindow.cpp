@@ -9,6 +9,10 @@
 
 #include "MainWindow.h"
 
+#include <strings.h>
+
+#include <algorithm>
+
 #include <Alert.h>
 #include <Application.h>
 #include <Button.h>
@@ -138,6 +142,10 @@ MainWindow::MainWindow()
 
 	fLogs.LoadRules();
 	_Refresh();
+	// The layout's preferred size is narrow (the lists' columns are cut
+	// off); start at the size the constructor's frame asked for.
+	ResizeTo(std::max(Bounds().Width(), 760.0f),
+		std::max(Bounds().Height(), 520.0f));
 	CenterOnScreen();
 }
 
@@ -648,6 +656,22 @@ MainWindow::MessageReceived(BMessage* message)
 		case kMsgSettingsChanged:
 			_Refresh();
 			break;
+
+		case kMsgSelectTab:
+		{
+			// in the order of the constructor's AddTab() calls; the
+			// labels are translated, so match on these fixed names
+			static const char* kTabNames[] = { "overview", "drivers",
+				"hardware", "diagnostics", "log", "compatibility" };
+			const char* name = message->GetString("tab", "");
+			for (int32 i = 0; i < (int32)B_COUNT_OF(kTabNames); i++) {
+				if (strcasecmp(name, kTabNames[i]) == 0) {
+					fTabs->Select(i);
+					break;
+				}
+			}
+			break;
+		}
 
 		case kMsgDriverSelected:
 			_FillDriverDetails();

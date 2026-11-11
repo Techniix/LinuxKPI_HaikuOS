@@ -6,6 +6,8 @@
 
 #include <Application.h>
 
+#include <string.h>
+
 #include "MainWindow.h"
 
 
@@ -22,8 +24,33 @@ public:
 
 	virtual void ReadyToRun()
 	{
-		(new MainWindow())->Show();
+		_Window();
 	}
+
+	// "LinuxKPIManager --tab <name>" opens (or, B_SINGLE_LAUNCH, brings
+	// the running window) at that tab; see kMsgSelectTab.
+	virtual void ArgvReceived(int32 argc, char** argv)
+	{
+		for (int32 i = 1; i + 1 < argc; i++) {
+			if (strcmp(argv[i], "--tab") == 0) {
+				BMessage select(kMsgSelectTab);
+				select.AddString("tab", argv[i + 1]);
+				_Window()->PostMessage(&select);
+			}
+		}
+	}
+
+private:
+	MainWindow* _Window()
+	{
+		if (fWindow == NULL) {
+			fWindow = new MainWindow();
+			fWindow->Show();
+		}
+		return fWindow;
+	}
+
+	MainWindow*	fWindow = NULL;
 };
 
 
